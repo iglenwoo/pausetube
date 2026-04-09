@@ -1,0 +1,236 @@
+/* OffTube — Content Styles */
+
+/* --- Feed Hide --- */
+
+/* Home feed */
+.offtube-blur ytd-browse[page-subtype="home"] #primary {
+  display: none !important;
+}
+
+/* Watch page sidebar recommendations */
+.offtube-blur ytd-watch-flexy #secondary {
+  display: none !important;
+}
+
+/* Search results */
+.offtube-blur ytd-search #primary {
+  display: none !important;
+}
+
+/* --- Feed Hidden Banner --- */
+
+.offtube-feed-banner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1a1a2e;
+  border-radius: 16px;
+  padding: 32px 40px;
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  z-index: 9999;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.offtube-banner-title {
+  color: #e0e0e0;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+}
+
+.offtube-banner-sub {
+  color: #666;
+  font-size: 13px;
+  margin: 0 0 20px 0;
+}
+
+.offtube-banner-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.offtube-banner-btns:last-child {
+  margin-bottom: 0;
+}
+
+.offtube-banner-btns button {
+  padding: 8px 14px;
+  background: #0f0f23;
+  border: 1px solid #2a2a3e;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.offtube-banner-btns button:hover {
+  background: #6366f1;
+  border-color: #6366f1;
+}
+
+/* --- Intent Prompt Overlay --- */
+
+.offtube-intent-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.offtube-intent-card {
+  background: #1a1a2e;
+  border-radius: 16px;
+  padding: 48px;
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+}
+
+.offtube-intent-card h1 {
+  color: #e0e0e0;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.offtube-intent-card p {
+  color: #888;
+  font-size: 14px;
+  margin: 0 0 32px 0;
+}
+
+.offtube-intent-input {
+  width: 100%;
+  padding: 14px 18px;
+  border: 2px solid #333;
+  border-radius: 10px;
+  background: #0f0f23;
+  color: #e0e0e0;
+  font-size: 16px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.offtube-intent-input:focus {
+  border-color: #6366f1;
+}
+
+.offtube-intent-input::placeholder {
+  color: #555;
+}
+
+.offtube-intent-submit {
+  margin-top: 16px;
+  padding: 12px 32px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.offtube-intent-submit:hover {
+  background: #4f46e5;
+}
+
+.offtube-intent-skip {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: none;
+  color: #666;
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.offtube-intent-skip:hover {
+  color: #999;
+}
+
+/* --- Intent Sticky Reminder --- */
+
+.offtube-intent-sticky {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  background: #1a1a2e;
+  color: #a5b4fc;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  z-index: 99990;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0.9;
+  transition: opacity 0.2s;
+}
+
+.offtube-intent-sticky:hover {
+  opacity: 1;
+}
+
+/* --- Floating Session Badge --- */
+
+.offtube-badge {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-variant-numeric: tabular-nums;
+  z-index: 99990;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+  user-select: none;
+}
+
+.offtube-badge:hover {
+  opacity: 1;
+}
+
+.offtube-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: offtube-pulse 2s infinite;
+}
+
+.offtube-badge-snoozed .offtube-badge-dot {
+  background: #6b7280;
+  animation: none;
+}
+
+@keyframes offtube-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
