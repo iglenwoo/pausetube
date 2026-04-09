@@ -27,8 +27,6 @@
   // --- Feed Hidden Banner ---
 
   function showFeedHiddenBanner() {
-    const url = new URL(window.location.href);
-    if (url.pathname === "/watch") return;
     if (document.querySelector(".offtube-feed-banner")) return;
 
     const banner = document.createElement("div");

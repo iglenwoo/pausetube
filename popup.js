@@ -14,7 +14,6 @@ const snoozeActiveEl = document.getElementById("snooze-active");
 const snoozeRemaining = document.getElementById("snooze-remaining");
 const snoozeStartBtn = document.getElementById("snooze-start");
 const snoozeCancelBtn = document.getElementById("snooze-cancel");
-const customMinutesInput = document.getElementById("custom-minutes");
 
 // --- State ---
 
@@ -105,12 +104,6 @@ document.querySelectorAll("#time-options .snooze-btn").forEach((btn) => {
   });
 });
 
-customMinutesInput.addEventListener("input", () => {
-  const val = parseInt(customMinutesInput.value, 10);
-  document.querySelectorAll("#time-options .snooze-btn").forEach((b) => b.classList.remove("active"));
-  selectedMinutes = val > 0 ? val : null;
-  updateStartButton();
-});
 
 document.querySelectorAll("#video-options .snooze-btn").forEach((btn) => {
   btn.addEventListener("click", () => {

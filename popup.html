@@ -83,32 +83,9 @@
 
     .snooze-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 6px;
-      margin-bottom: 8px;
-    }
-
-    .custom-input-row {
       margin-bottom: 12px;
-    }
-
-    .custom-input-row input {
-      width: 100%;
-      padding: 7px 10px;
-      background: #1a1a2e;
-      border: 1px solid #2a2a3e;
-      border-radius: 8px;
-      color: #e0e0e0;
-      font-size: 12px;
-      outline: none;
-    }
-
-    .custom-input-row input:focus {
-      border-color: #6366f1;
-    }
-
-    .custom-input-row input::placeholder {
-      color: #555;
     }
 
     .snooze-btn {
@@ -220,15 +197,8 @@
     <div class="section-title">Snooze — Time</div>
     <div class="snooze-grid" id="time-options">
       <button class="snooze-btn" data-minutes="1">1m</button>
-      <button class="snooze-btn" data-minutes="3">3m</button>
       <button class="snooze-btn" data-minutes="5">5m</button>
       <button class="snooze-btn" data-minutes="10">10m</button>
-      <button class="snooze-btn" data-minutes="15">15m</button>
-      <button class="snooze-btn" data-minutes="20">20m</button>
-      <button class="snooze-btn" data-minutes="30">30m</button>
-    </div>
-    <div class="custom-input-row">
-      <input type="number" id="custom-minutes" placeholder="Custom minutes..." min="1" max="480" />
     </div>
 
     <div class="section-title">Snooze — Videos</div>
@@ -236,7 +206,6 @@
       <button class="snooze-btn" data-videos="1">1</button>
       <button class="snooze-btn" data-videos="2">2</button>
       <button class="snooze-btn" data-videos="3">3</button>
-      <button class="snooze-btn" data-videos="5">5</button>
     </div>
 
     <button class="snooze-start" id="snooze-start" disabled>Select a snooze option</button>
