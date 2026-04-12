@@ -223,7 +223,12 @@ async function updateBadge() {
 
   if (snooze.active) {
     chrome.action.setBadgeBackgroundColor({ color: "#6B7280" });
-    chrome.action.setBadgeText({ text: "💤" });
+    if (snooze.expiresAt) {
+      const remainingMin = Math.ceil(Math.max(0, snooze.expiresAt - Date.now()) / 60000);
+      chrome.action.setBadgeText({ text: `${remainingMin}m` });
+    } else {
+      chrome.action.setBadgeText({ text: "💤" });
+    }
     return;
   }
 

@@ -100,7 +100,6 @@ document.querySelectorAll("#time-options .snooze-btn").forEach((btn) => {
     } else {
       btn.classList.add("active");
       selectedMinutes = Number(btn.dataset.minutes);
-      customMinutesInput.value = "";
     }
     updateStartButton();
   });
