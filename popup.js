@@ -27,7 +27,9 @@ function updateStats(state) {
   const session = state.session;
 
   if (session.startTime) {
-    const elapsed = Date.now() - session.startTime;
+    const elapsedBase = session.elapsedMs || 0;
+    const runningElapsed = session.timerStartedAt ? Date.now() - session.timerStartedAt : 0;
+    const elapsed = elapsedBase + runningElapsed;
     const min = Math.floor(elapsed / 60000);
     statTime.textContent = min < 60 ? `${min}m` : `${Math.floor(min / 60)}h ${min % 60}m`;
   } else {

@@ -8,6 +8,7 @@
   let badgeEl = null;
   let stickyEl = null;
   let badgeInterval = null;
+  let savedScrollY = 0;
 
   // --- State ---
 
@@ -75,7 +76,9 @@
     if (isSnoozed()) {
       document.documentElement.classList.remove("offtube-blur");
       removeFeedHiddenBanner();
+      window.scrollTo(0, savedScrollY);
     } else {
+      savedScrollY = window.scrollY;
       document.documentElement.classList.add("offtube-blur");
       document.querySelectorAll("video").forEach((v) => v.pause());
       showFeedHiddenBanner();
@@ -182,7 +185,11 @@
   function updateBadge() {
     if (!badgeEl || !currentState?.session?.startTime) return;
 
-    const elapsed = Date.now() - currentState.session.startTime;
+    const elapsedBase = currentState.session.elapsedMs || 0;
+    const runningElapsed = currentState.session.timerStartedAt
+      ? Date.now() - currentState.session.timerStartedAt
+      : 0;
+    const elapsed = elapsedBase + runningElapsed;
     const min = Math.floor(elapsed / 60000);
     const videos = currentState.session.videoCount || 0;
     const snoozed = isSnoozed();

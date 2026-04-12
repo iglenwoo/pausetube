@@ -6,7 +6,7 @@ YouTube's UI is designed to maximize watch time through dopamine loops: thumbnai
 
 ## Core Insight
 
-Don't block. Nudge. Add friction to the dopamine loop without removing access entirely.
+Don't hard-block YouTube. Hide the highest-risk browsing surfaces by default, then require a deliberate snooze to bring them back temporarily.
 
 ## Target Behavior Change
 
@@ -14,18 +14,19 @@ Interrupt the cycle: **thumbnail → click → video → more thumbnails → cli
 
 ## Features (v0.1)
 
-### 1. Blur Thumbnails
+### 1. Hide Browsing Surfaces
 
-Breaks the visual hook that initiates the dopamine loop.
+Removes the most compulsive browsing surfaces until the user makes an explicit choice to snooze.
 
 **Behavior:**
-- Home feed thumbnails are blurred by default via CSS `filter: blur()`
-- Sidebar recommendations on video pages are always blurred (biggest rabbit hole trigger)
-- Click on an individual thumbnail to unblur it (friction is per-video, not per-session)
-- Option to unblur all via snooze (see Feature 4)
+- Home feed is hidden by default
+- Search results are hidden by default
+- Sidebar recommendations on video pages are hidden by default (biggest rabbit hole trigger)
+- A centered message explains that browsing is hidden and offers snooze choices
+- Snooze temporarily reveals the hidden surfaces (see Feature 4)
 
-**Why blur, not hide:**
-Hiding feels like something is taken away — users disable the extension. Blur keeps the content "there" but removes the visual dopamine trigger (thumbnails are the hook).
+**Why hide the screen instead of blur:**
+The current product direction is stronger friction at the browsing layer. Instead of softening thumbnails, OffTube hides the high-risk browsing surfaces until the user explicitly snoozes, which makes the decision more deliberate without permanently disabling access.
 
 ### 2. Intent Prompt
 
@@ -50,7 +51,7 @@ Ongoing passive awareness while inside the loop.
 **Behavior:**
 - Floating badge on YouTube pages showing: elapsed time + videos watched
 - Example: `23 min · 4 videos`
-- Extension icon badge shows the same info (visible from any tab)
+- Extension icon badge shows the elapsed session time at a glance (visible from any tab)
 
 **Multi-tab handling:**
 - State stored in `chrome.storage.local`, shared across all tabs
@@ -68,8 +69,9 @@ Prevents permanent removal of friction layers.
 
 **Behavior:**
 - Extension has no "disable" option — only snooze
-- Snooze disables all nudges (blur, prompt, timer) temporarily
-- When snooze expires, all features re-activate automatically
+- Snooze temporarily reveals hidden browsing surfaces and suppresses the prompt
+- Session tracking continues while snoozed, and the UI indicates that snooze is active
+- When snooze expires, all hidden surfaces and prompts re-activate automatically
 
 **Snooze options:**
 
@@ -90,8 +92,8 @@ ADHD users may lose track of time but notice video count, or vice versa. Dual li
 offtube/
 ├── manifest.json          # Chrome extension manifest (MV3)
 ├── background.js          # Service worker: session state, timer, snooze logic
-├── content.js             # Injected into YouTube: blur, intent prompt, floating badge
-├── content.css            # Blur styles, overlay styles, badge styles
+├── content.js             # Injected into YouTube: hidden-screen UI, intent prompt, floating badge
+├── content.css            # Hidden-screen styles, overlay styles, badge styles
 ├── popup.html             # Extension popup: snooze controls, session stats
 ├── popup.js               # Popup logic
 └── icons/                 # Extension icons
@@ -108,6 +110,8 @@ offtube/
 {
   "session": {
     "startTime": 1712000000000,
+    "elapsedMs": 540000,
+    "timerStartedAt": 1712001200000,
     "videoCount": 4,
     "videosWatched": ["dQw4w9WgXcQ", "abc123"],
     "intent": "watch the Next.js tutorial",
@@ -138,7 +142,7 @@ offtube/
 
 ## Open Questions
 
-1. Should blur intensity be configurable (light blur vs heavy blur)?
+1. Should home, search, and sidebar surfaces all be hidden, or should some remain visible by default?
 2. Should the floating timer be dismissable or always visible?
 3. Should there be a "focus mode" that only allows the search bar + subscriptions?
 4. Sound/notification when snooze expires, or just silent re-activation?

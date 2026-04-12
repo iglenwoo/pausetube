@@ -9,6 +9,8 @@ const DEFAULT_SETTINGS = {
 
 const EMPTY_SESSION = {
   startTime: null,
+  elapsedMs: 0,
+  timerStartedAt: null,
   videoCount: 0,
   videosWatched: [],
   intent: null,
@@ -40,9 +42,33 @@ chrome.runtime.onInstalled.addListener(async () => {
 async function getState() {
   const data = await chrome.storage.local.get(["session", "snooze", "settings"]);
   return {
-    session: data.session || EMPTY_SESSION,
+    session: { ...EMPTY_SESSION, ...(data.session || {}) },
     snooze: data.snooze || EMPTY_SNOOZE,
     settings: data.settings || DEFAULT_SETTINGS,
+  };
+}
+
+function getElapsedMs(session, now = Date.now()) {
+  const elapsedMs = session.elapsedMs || 0;
+  if (!session.timerStartedAt) return elapsedMs;
+  return elapsedMs + (now - session.timerStartedAt);
+}
+
+function pauseTimer(session, now = Date.now()) {
+  if (!session.timerStartedAt) return session;
+  return {
+    ...session,
+    elapsedMs: getElapsedMs(session, now),
+    timerStartedAt: null,
+  };
+}
+
+function resumeTimer(session, now = Date.now()) {
+  if (session.timerStartedAt) return session;
+  return {
+    ...session,
+    startTime: session.startTime || now,
+    timerStartedAt: now,
   };
 }
 
@@ -54,7 +80,12 @@ async function ensureSession() {
   if (session.lastActivity) {
     const inactiveMin = (now - session.lastActivity) / 1000 / 60;
     if (inactiveMin > settings.sessionTimeoutMin) {
-      const newSession = { ...EMPTY_SESSION, startTime: now, lastActivity: now };
+      const newSession = {
+        ...EMPTY_SESSION,
+        startTime: now,
+        timerStartedAt: now,
+        lastActivity: now,
+      };
       await chrome.storage.local.set({ session: newSession, snooze: EMPTY_SNOOZE });
       return newSession;
     }
@@ -62,7 +93,12 @@ async function ensureSession() {
 
   // Start new session if none exists
   if (!session.startTime) {
-    const newSession = { ...EMPTY_SESSION, startTime: now, lastActivity: now };
+    const newSession = {
+      ...EMPTY_SESSION,
+      startTime: now,
+      timerStartedAt: now,
+      lastActivity: now,
+    };
     await chrome.storage.local.set({ session: newSession });
     return newSession;
   }
@@ -71,6 +107,38 @@ async function ensureSession() {
   session.lastActivity = now;
   await chrome.storage.local.set({ session });
   return session;
+}
+
+async function hasOpenYouTubeTabs() {
+  const tabs = await chrome.tabs.query({ url: "https://www.youtube.com/*" });
+  return tabs.length > 0;
+}
+
+async function pausePersistedTimerAtLastActivity() {
+  const { session } = await getState();
+  if (!session.timerStartedAt) return session;
+
+  const pauseAt = Math.max(session.timerStartedAt, session.lastActivity || session.timerStartedAt);
+  const pausedSession = pauseTimer(session, pauseAt);
+  await chrome.storage.local.set({ session: pausedSession });
+  return pausedSession;
+}
+
+async function syncTimerWithYouTubeTabs() {
+  const [{ session }, youtubeTabsOpen] = await Promise.all([getState(), hasOpenYouTubeTabs()]);
+
+  if (!session.startTime) return session;
+
+  const nextSession = youtubeTabsOpen ? resumeTimer(session) : pauseTimer(session);
+  if (
+    nextSession.elapsedMs !== session.elapsedMs ||
+    nextSession.timerStartedAt !== session.timerStartedAt ||
+    nextSession.startTime !== session.startTime
+  ) {
+    await chrome.storage.local.set({ session: nextSession });
+  }
+
+  return nextSession;
 }
 
 // --- Video Tracking ---
@@ -150,7 +218,7 @@ async function updateBadge() {
     return;
   }
 
-  const elapsedMin = Math.floor((Date.now() - session.startTime) / 1000 / 60);
+  const elapsedMin = Math.floor(getElapsedMs(session) / 1000 / 60);
   const text = `${elapsedMin}m`;
   chrome.action.setBadgeBackgroundColor({ color: "#EF4444" });
   chrome.action.setBadgeText({ text });
@@ -162,12 +230,32 @@ async function updateBadge() {
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (tab.url && tab.url.includes("youtube.com")) {
     await ensureSession();
+  }
+
+  if (changeInfo.url || tab.url) {
+    await syncTimerWithYouTubeTabs();
     await updateBadge();
   }
 });
 
+chrome.tabs.onRemoved.addListener(async () => {
+  await syncTimerWithYouTubeTabs();
+  await updateBadge();
+});
+
 // Periodic badge update while YouTube is open
 chrome.alarms.create("update-badge", { periodInMinutes: 1 });
+
+chrome.runtime.onStartup.addListener(async () => {
+  await pausePersistedTimerAtLastActivity();
+
+  if (await hasOpenYouTubeTabs()) {
+    await ensureSession();
+  }
+
+  await syncTimerWithYouTubeTabs();
+  await updateBadge();
+});
 
 // --- Navigation Tracking ---
 
@@ -229,7 +317,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
   if (msg.type === "heartbeat") {
-    ensureSession().then(() => updateBadge()).then(() => sendResponse({ ok: true }));
+    ensureSession()
+      .then(() => syncTimerWithYouTubeTabs())
+      .then(() => updateBadge())
+      .then(() => sendResponse({ ok: true }));
     return true;
   }
 });
