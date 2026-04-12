@@ -9,6 +9,7 @@
   let stickyEl = null;
   let badgeInterval = null;
   let savedScrollY = 0;
+  let toastMidpointTimer = null;
 
   // --- State ---
 
@@ -27,14 +28,38 @@
 
   // --- Feed Hidden Banner ---
 
+  function snoozeSubtitle(count) {
+    if (count >= 6) return "What's actually going on?";
+    if (count >= 4) return "Still here?";
+    if (count >= 2) return "You keep coming back...";
+    return "Snooze to browse for a bit";
+  }
+
+  async function handleSnoozeClick(minutes, videoLimit) {
+    await chrome.runtime.sendMessage({ type: "start-snooze", minutes, videoLimit });
+    await fetchState();
+    applyBlur();
+  }
+
   function showFeedHiddenBanner() {
     if (document.querySelector(".offtube-feed-banner")) return;
+
+    const snoozeCount = currentState?.session?.snoozeCount || 0;
+    const totalSnoozedMs = currentState?.session?.totalSnoozedMs || 0;
+    const totalMin = Math.round(totalSnoozedMs / 60000);
+
+    let statsHtml = "";
+    if (snoozeCount > 0) {
+      const timeStr = totalMin > 0 ? ` · ${totalMin} min browsing` : "";
+      statsHtml = `<p class="offtube-banner-snooze-count">Snoozed ${snoozeCount}×${timeStr}</p>`;
+    }
 
     const banner = document.createElement("div");
     banner.className = "offtube-feed-banner";
     banner.innerHTML = `
       <p class="offtube-banner-title">Feed hidden</p>
-      <p class="offtube-banner-sub">Snooze to browse for a bit</p>
+      <p class="offtube-banner-sub">${snoozeSubtitle(snoozeCount)}</p>
+      ${statsHtml}
       <div class="offtube-banner-btns">
         <button data-minutes="1">1 min</button>
         <button data-minutes="5">5 min</button>
@@ -48,19 +73,11 @@
     `;
 
     banner.querySelectorAll("[data-minutes]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        await chrome.runtime.sendMessage({ type: "start-snooze", minutes: Number(btn.dataset.minutes) });
-        await fetchState();
-        applyBlur();
-      });
+      btn.addEventListener("click", () => handleSnoozeClick(Number(btn.dataset.minutes), null));
     });
 
     banner.querySelectorAll("[data-videos]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        await chrome.runtime.sendMessage({ type: "start-snooze", videoLimit: Number(btn.dataset.videos) });
-        await fetchState();
-        applyBlur();
-      });
+      btn.addEventListener("click", () => handleSnoozeClick(null, Number(btn.dataset.videos)));
     });
 
     document.body.appendChild(banner);
@@ -171,6 +188,45 @@
     }
   }
 
+  // --- Toast ---
+
+  function showToast() {
+    document.querySelector(".offtube-toast")?.remove();
+
+    const snoozeCount = currentState?.session?.snoozeCount || 0;
+    const totalSnoozedMs = currentState?.session?.totalSnoozedMs || 0;
+    const totalMin = Math.round(totalSnoozedMs / 60000);
+    const text = totalMin > 0
+      ? `Snoozed ${snoozeCount}× · ${totalMin} min browsing`
+      : `Snoozed ${snoozeCount}×`;
+
+    const toast = document.createElement("div");
+    toast.className = "offtube-toast";
+    toast.textContent = text;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add("offtube-toast-hide");
+      setTimeout(() => toast.remove(), 500);
+    }, 4000);
+  }
+
+  function scheduleToastMidpoint() {
+    clearTimeout(toastMidpointTimer);
+    toastMidpointTimer = null;
+
+    const expiresAt = currentState?.snooze?.expiresAt;
+    if (!expiresAt) return;
+
+    const remaining = expiresAt - Date.now();
+    if (remaining < 10000) return;
+
+    toastMidpointTimer = setTimeout(async () => {
+      await fetchState();
+      if (isSnoozed()) showToast();
+    }, remaining / 2);
+  }
+
   // --- Session Badge ---
 
   function createBadge() {
@@ -271,6 +327,16 @@
       }
       applyBlur();
       updateBadge();
+
+      if (msg.snooze.active) {
+        fetchState().then(() => {
+          showToast();
+          scheduleToastMidpoint();
+        });
+      } else {
+        clearTimeout(toastMidpointTimer);
+        toastMidpointTimer = null;
+      }
     }
   });
 

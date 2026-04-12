@@ -15,6 +15,8 @@ const EMPTY_SESSION = {
   videosWatched: [],
   intent: null,
   lastActivity: null,
+  snoozeCount: 0,
+  totalSnoozedMs: 0,
 };
 
 const EMPTY_SNOOZE = {
@@ -160,8 +162,13 @@ async function trackVideo(videoId) {
 
 async function startSnooze(minutes, videoLimit) {
   const { session } = await getState();
+
+  session.snoozeCount = (session.snoozeCount || 0) + 1;
+  await chrome.storage.local.set({ session });
+
   const snooze = {
     active: true,
+    startedAt: Date.now(),
     expiresAt: minutes ? Date.now() + minutes * 60 * 1000 : null,
     videoLimit: videoLimit || null,
     videosAtSnoozeStart: session.videoCount,
@@ -177,6 +184,13 @@ async function startSnooze(minutes, videoLimit) {
 }
 
 async function endSnooze() {
+  const { snooze, session } = await getState();
+
+  if (snooze.active && snooze.startedAt) {
+    session.totalSnoozedMs = (session.totalSnoozedMs || 0) + (Date.now() - snooze.startedAt);
+    await chrome.storage.local.set({ session });
+  }
+
   await chrome.storage.local.set({ snooze: EMPTY_SNOOZE });
   chrome.alarms.clear("snooze-expire");
   await updateBadge();
