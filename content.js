@@ -47,6 +47,7 @@
     const snoozeCount = currentState?.session?.snoozeCount || 0;
     const totalSnoozedMs = currentState?.session?.totalSnoozedMs || 0;
     const totalMin = Math.round(totalSnoozedMs / 60000);
+    const onWatchPage = window.location.pathname === "/watch";
 
     let statsHtml = "";
     if (snoozeCount > 0) {
@@ -57,7 +58,7 @@
     const banner = document.createElement("div");
     banner.className = "offtube-feed-banner";
     banner.innerHTML = `
-      <p class="offtube-banner-title">Feed hidden</p>
+      <p class="offtube-banner-title">${onWatchPage ? "Take a breath" : "Feed hidden"}</p>
       <p class="offtube-banner-sub">${snoozeSubtitle(snoozeCount)}</p>
       ${statsHtml}
       <div class="offtube-banner-btns">

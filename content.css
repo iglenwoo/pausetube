@@ -12,6 +12,16 @@
   display: none !important;
 }
 
+/* Full-page dim overlay — sits behind the banner (z-index 9998 < 9999) */
+.offtube-blur body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 9998;
+  pointer-events: none;
+}
+
 /* Search results */
 .offtube-blur ytd-search #primary {
   display: none !important;
