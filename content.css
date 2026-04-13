@@ -62,13 +62,14 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: #6366f1;
+  background: #4338ca; /* exhale — deep indigo */
   transform: scale(0.7);
   opacity: 0.5;
-  transition: transform 4s ease-in-out, opacity 4s ease-in-out;
+  transition: transform 4s ease-in-out, opacity 4s ease-in-out, background-color 4s ease-in-out;
 }
 
 .offtube-breathe-circle.inhaling {
+  background: #a78bfa; /* inhale — bright violet */
   transform: scale(1.3);
   opacity: 1;
 }
