@@ -51,6 +51,48 @@
     applyRiskUI();
   }
 
+  function runBreathing(banner, onComplete) {
+    const circle = banner.querySelector(".offtube-breathe-circle");
+    const phaseLabel = banner.querySelector(".offtube-breathe-phase");
+    const countLabel = banner.querySelector(".offtube-breathe-count");
+
+    const INHALE_S = 4;
+    const EXHALE_S = 4;
+
+    phaseLabel.textContent = "inhale";
+    countLabel.textContent = INHALE_S;
+    // rAF ensures the initial scale(0.7) is painted before transition fires
+    requestAnimationFrame(() => circle.classList.add("inhaling"));
+
+    let elapsed = 0;
+    const tick = setInterval(() => {
+      elapsed++;
+      if (elapsed < INHALE_S) {
+        countLabel.textContent = INHALE_S - elapsed;
+      } else if (elapsed === INHALE_S) {
+        phaseLabel.textContent = "exhale";
+        countLabel.textContent = EXHALE_S;
+        circle.classList.remove("inhaling");
+      } else if (elapsed < INHALE_S + EXHALE_S) {
+        countLabel.textContent = (INHALE_S + EXHALE_S) - elapsed;
+      } else {
+        clearInterval(tick);
+        onComplete();
+      }
+    }, 1000);
+  }
+
+  function showSnoozePhase(banner) {
+    const breatheEl = banner.querySelector(".offtube-phase-breathe");
+    const snoozeEl = banner.querySelector(".offtube-phase-snooze");
+    breatheEl.classList.add("fading");
+    setTimeout(() => {
+      breatheEl.style.display = "none";
+      snoozeEl.style.display = "flex";
+      requestAnimationFrame(() => snoozeEl.classList.add("visible"));
+    }, 300);
+  }
+
   function showFeedHiddenBanner() {
     if (document.querySelector(".offtube-feed-banner")) return;
 
@@ -72,40 +114,35 @@
     const banner = document.createElement("div");
     banner.className = "offtube-feed-banner";
     banner.innerHTML = `
-      <p class="offtube-banner-state">${stateText}</p>
-      <div class="offtube-breathe-wrap">
+      <div class="offtube-phase-breathe">
         <div class="offtube-breathe-circle"></div>
-        <p class="offtube-breathe-label">breathe</p>
+        <div class="offtube-breathe-text">
+          <span class="offtube-breathe-phase">inhale</span>
+          <span class="offtube-breathe-count">4</span>
+        </div>
       </div>
-      <div class="offtube-banner-choices">
-        <button class="offtube-choice-snooze" data-minutes="10">10 more min</button>
-        <button class="offtube-choice-snooze" data-minutes="3">3 more min</button>
-        ${intentBtnHtml}
+      <div class="offtube-phase-snooze">
+        <p class="offtube-snooze-state">${stateText}</p>
         <button class="offtube-choice-done">I'm done</button>
+        <button class="offtube-choice-snooze" data-minutes="3">3 more min</button>
+        <button class="offtube-choice-snooze" data-minutes="10">10 more min</button>
+        ${intentBtnHtml}
       </div>
     `;
 
-    // Reveal choices after breathing animation (~6s)
-    setTimeout(() => {
-      banner.querySelector(".offtube-banner-choices")?.classList.add("visible");
-    }, 6500);
+    runBreathing(banner, () => showSnoozePhase(banner));
 
     banner.querySelectorAll("[data-minutes]").forEach((btn) => {
       btn.addEventListener("click", () => handleSnoozeClick(Number(btn.dataset.minutes), null));
     });
 
-    const doneBtn = banner.querySelector(".offtube-choice-done");
-    if (doneBtn) {
-      doneBtn.addEventListener("click", () => {
-        chrome.runtime.sendMessage({ type: "close-tab" });
-      });
-    }
+    banner.querySelector(".offtube-choice-done")?.addEventListener("click", () => {
+      chrome.runtime.sendMessage({ type: "close-tab" });
+    });
 
-    const intentBtnEl = banner.querySelector(".offtube-choice-intent");
-    if (intentBtnEl) {
-      // Snooze 10 min so the overlay clears; intent sticky stays visible
-      intentBtnEl.addEventListener("click", () => handleSnoozeClick(10, null));
-    }
+    banner.querySelector(".offtube-choice-intent")?.addEventListener("click", () => {
+      handleSnoozeClick(10, null);
+    });
 
     document.body.appendChild(banner);
   }
@@ -156,6 +193,9 @@
       document.documentElement.classList.remove("offtube-blur");
       removeFeedHiddenBanner();
       removeStateLabel();
+      if (risk === "snoozed") {
+        document.querySelectorAll("video").forEach((v) => v.play().catch(() => {}));
+      }
       return;
     }
 

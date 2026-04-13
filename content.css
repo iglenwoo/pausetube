@@ -43,108 +43,132 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-.offtube-banner-state {
-  color: #e0e0e0;
-  font-size: 16px;
-  font-weight: 500;
-  margin: 0 0 4px 0;
-  font-variant-numeric: tabular-nums;
-}
+/* --- Phase 1: Breathing --- */
 
-/* --- Breathing Animation --- */
-
-@keyframes offtube-breathe {
-  0%, 100% { transform: scale(0.65); opacity: 0.45; }
-  50% { transform: scale(1.15); opacity: 1; }
-}
-
-.offtube-breathe-wrap {
+.offtube-phase-breathe {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  margin: 28px 0 24px;
+  gap: 20px;
+  padding: 8px 0;
+  transition: opacity 0.3s ease;
+}
+
+.offtube-phase-breathe.fading {
+  opacity: 0;
 }
 
 .offtube-breathe-circle {
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   background: #6366f1;
-  animation: offtube-breathe 3s ease-in-out 2;
+  transform: scale(0.7);
+  opacity: 0.5;
+  transition: transform 4s ease-in-out, opacity 4s ease-in-out;
 }
 
-.offtube-breathe-label {
-  color: #666;
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: lowercase;
-  margin: 0;
+.offtube-breathe-circle.inhaling {
+  transform: scale(1.3);
+  opacity: 1;
 }
 
-/* --- Choice Buttons --- */
-
-.offtube-banner-choices {
+.offtube-breathe-text {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.offtube-breathe-phase {
+  color: #555;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.offtube-breathe-count {
+  color: #e0e0e0;
+  font-size: 36px;
+  font-weight: 200;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* --- Phase 2: Snooze Options --- */
+
+.offtube-phase-snooze {
+  display: none;
+  flex-direction: column;
   gap: 8px;
-  width: 220px;
+  width: 240px;
   opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.4s ease;
 }
 
-.offtube-banner-choices.visible {
+.offtube-phase-snooze.visible {
   opacity: 1;
-  pointer-events: auto;
 }
 
-.offtube-choice-snooze {
-  padding: 10px 16px;
-  background: #6366f1;
+.offtube-snooze-state {
+  color: #666;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  margin: 0 0 6px;
+}
+
+/* "I'm done" — most visually prominent, feels restful */
+.offtube-choice-done {
+  padding: 15px 16px;
+  background: #f0f0f5;
   border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 13px;
-  font-weight: 500;
+  border-radius: 10px;
+  color: #0f0f1a;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
+  letter-spacing: -0.01em;
+}
+
+.offtube-choice-done:hover {
+  background: #ffffff;
+}
+
+/* Continue options — visible but de-emphasized */
+.offtube-choice-snooze {
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid #2a2a3e;
+  border-radius: 8px;
+  color: #666;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
 }
 
 .offtube-choice-snooze:hover {
-  background: #4f46e5;
+  border-color: #4a4a5e;
+  color: #aaa;
 }
 
+/* Back to intent — softest option */
 .offtube-choice-intent {
-  padding: 10px 16px;
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
-  border-radius: 8px;
-  color: #a5b4fc;
-  font-size: 13px;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  color: #444;
+  font-size: 12px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color 0.15s;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .offtube-choice-intent:hover {
-  border-color: #6366f1;
-}
-
-.offtube-choice-done {
-  padding: 8px 16px;
-  background: none;
-  border: none;
-  color: #555;
-  font-size: 12px;
-  cursor: pointer;
-  transition: color 0.15s;
-}
-
-.offtube-choice-done:hover {
-  color: #888;
+  color: #a5b4fc;
 }
 
 /* --- State Label (medium risk) --- */
