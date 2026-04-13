@@ -8,8 +8,9 @@
   let badgeEl = null;
   let stickyEl = null;
   let badgeInterval = null;
-  let savedScrollY = 0;
   let toastMidpointTimer = null;
+  let stateLabelShown = false;
+  let lastKnownSessionStart = null;
 
   // --- State ---
 
@@ -26,60 +27,85 @@
     return currentState?.snooze?.active === true;
   }
 
-  // --- Feed Hidden Banner ---
-
-  function snoozeSubtitle(count) {
-    if (count >= 6) return "What's actually going on?";
-    if (count >= 4) return "Still here?";
-    if (count >= 2) return "You keep coming back...";
-    return "Snooze to browse for a bit";
+  function getElapsedMs(session) {
+    const base = session.elapsedMs || 0;
+    if (!session.timerStartedAt) return base;
+    return base + (Date.now() - session.timerStartedAt);
   }
+
+  function getRiskLevel() {
+    if (!currentState?.session?.startTime) return "none";
+    if (isSnoozed()) return "snoozed";
+    const elapsed = getElapsedMs(currentState.session);
+    const shortStreak = currentState.session?.shortStreak || 0;
+    if (elapsed >= 15 * 60 * 1000 || shortStreak >= 3) return "high";
+    if (elapsed >= 10 * 60 * 1000) return "medium";
+    return "none";
+  }
+
+  // --- Feed Hidden Banner ---
 
   async function handleSnoozeClick(minutes, videoLimit) {
     await chrome.runtime.sendMessage({ type: "start-snooze", minutes, videoLimit });
     await fetchState();
-    applyBlur();
+    applyRiskUI();
   }
 
   function showFeedHiddenBanner() {
     if (document.querySelector(".offtube-feed-banner")) return;
 
-    const snoozeCount = currentState?.session?.snoozeCount || 0;
-    const totalSnoozedMs = currentState?.session?.totalSnoozedMs || 0;
-    const totalMin = Math.round(totalSnoozedMs / 60000);
-    const onWatchPage = window.location.pathname === "/watch";
+    const session = currentState?.session || {};
+    const elapsed = getElapsedMs(session);
+    const min = Math.floor(elapsed / 60000);
+    const videos = session.videoCount || 0;
+    const shortStreak = session.shortStreak || 0;
+    const intent = session.intent && session.intent !== "Just browsing" ? session.intent : null;
 
-    let statsHtml = "";
-    if (snoozeCount > 0) {
-      const timeStr = totalMin > 0 ? ` · ${totalMin} min browsing` : "";
-      statsHtml = `<p class="offtube-banner-snooze-count">Snoozed ${snoozeCount}×${timeStr}</p>`;
-    }
+    const stateText = shortStreak >= 3
+      ? `${shortStreak} Shorts in a row`
+      : `${min} min here · ${videos} video${videos !== 1 ? "s" : ""}`;
+
+    const intentBtnHtml = intent
+      ? `<button class="offtube-choice-intent">Back to: ${intent}</button>`
+      : "";
 
     const banner = document.createElement("div");
     banner.className = "offtube-feed-banner";
     banner.innerHTML = `
-      <p class="offtube-banner-title">${onWatchPage ? "Take a breath" : "Feed hidden"}</p>
-      <p class="offtube-banner-sub">${snoozeSubtitle(snoozeCount)}</p>
-      ${statsHtml}
-      <div class="offtube-banner-btns">
-        <button data-minutes="1">1 min</button>
-        <button data-minutes="5">5 min</button>
-        <button data-minutes="10">10 min</button>
+      <p class="offtube-banner-state">${stateText}</p>
+      <div class="offtube-breathe-wrap">
+        <div class="offtube-breathe-circle"></div>
+        <p class="offtube-breathe-label">breathe</p>
       </div>
-      <div class="offtube-banner-btns">
-        <button data-videos="1">1 video</button>
-        <button data-videos="2">2 videos</button>
-        <button data-videos="3">3 videos</button>
+      <div class="offtube-banner-choices">
+        <button class="offtube-choice-snooze" data-minutes="10">10 more min</button>
+        <button class="offtube-choice-snooze" data-minutes="3">3 more min</button>
+        ${intentBtnHtml}
+        <button class="offtube-choice-done">I'm done</button>
       </div>
     `;
+
+    // Reveal choices after breathing animation (~6s)
+    setTimeout(() => {
+      banner.querySelector(".offtube-banner-choices")?.classList.add("visible");
+    }, 6500);
 
     banner.querySelectorAll("[data-minutes]").forEach((btn) => {
       btn.addEventListener("click", () => handleSnoozeClick(Number(btn.dataset.minutes), null));
     });
 
-    banner.querySelectorAll("[data-videos]").forEach((btn) => {
-      btn.addEventListener("click", () => handleSnoozeClick(null, Number(btn.dataset.videos)));
-    });
+    const doneBtn = banner.querySelector(".offtube-choice-done");
+    if (doneBtn) {
+      doneBtn.addEventListener("click", () => {
+        chrome.runtime.sendMessage({ type: "close-tab" });
+      });
+    }
+
+    const intentBtnEl = banner.querySelector(".offtube-choice-intent");
+    if (intentBtnEl) {
+      // Snooze 10 min so the overlay clears; intent sticky stays visible
+      intentBtnEl.addEventListener("click", () => handleSnoozeClick(10, null));
+    }
 
     document.body.appendChild(banner);
   }
@@ -88,19 +114,63 @@
     document.querySelector(".offtube-feed-banner")?.remove();
   }
 
-  // --- Blur ---
+  // --- State Label (medium risk) ---
 
-  function applyBlur() {
-    if (isSnoozed()) {
+  function showStateLabel() {
+    if (document.querySelector(".offtube-state-label")) return;
+
+    const session = currentState?.session || {};
+    const elapsed = getElapsedMs(session);
+    const min = Math.floor(elapsed / 60000);
+    const videos = session.videoCount || 0;
+
+    const label = document.createElement("div");
+    label.className = "offtube-state-label";
+    label.textContent = `${min} min here · ${videos} video${videos !== 1 ? "s" : ""}`;
+    document.body.appendChild(label);
+
+    setTimeout(() => {
+      label.classList.add("offtube-state-label-hide");
+      setTimeout(() => label.remove(), 500);
+    }, 8000);
+
+    stateLabelShown = true;
+  }
+
+  function removeStateLabel() {
+    document.querySelector(".offtube-state-label")?.remove();
+  }
+
+  // --- Risk UI ---
+
+  function applyRiskUI() {
+    const risk = getRiskLevel();
+
+    // Reset state label tracking when session resets
+    if (currentState?.session?.startTime !== lastKnownSessionStart) {
+      lastKnownSessionStart = currentState?.session?.startTime || null;
+      stateLabelShown = false;
+    }
+
+    if (risk === "snoozed" || risk === "none") {
       document.documentElement.classList.remove("offtube-blur");
       removeFeedHiddenBanner();
-      window.scrollTo(0, savedScrollY);
-    } else {
-      savedScrollY = window.scrollY;
-      document.documentElement.classList.add("offtube-blur");
-      document.querySelectorAll("video").forEach((v) => v.pause());
-      showFeedHiddenBanner();
+      removeStateLabel();
+      return;
     }
+
+    if (risk === "medium") {
+      document.documentElement.classList.remove("offtube-blur");
+      removeFeedHiddenBanner();
+      if (!stateLabelShown) showStateLabel();
+      return;
+    }
+
+    // high
+    document.documentElement.classList.add("offtube-blur");
+    document.querySelectorAll("video").forEach((v) => v.pause());
+    removeStateLabel();
+    showFeedHiddenBanner();
   }
 
   // --- Intent Prompt ---
@@ -269,7 +339,7 @@
 
   async function init() {
     await fetchState();
-    applyBlur();
+    applyRiskUI();
 
     // Intent prompt
     if (shouldShowIntent()) {
@@ -281,10 +351,11 @@
     // Session badge
     createBadge();
 
-    // Periodic badge updates
+    // Periodic badge updates and risk level checks
     badgeInterval = setInterval(async () => {
       await fetchState();
       updateBadge();
+      applyRiskUI();
     }, 10000);
 
     // Heartbeat to keep session alive
@@ -297,7 +368,7 @@
   function onNavigate() {
     removeFeedHiddenBanner();
     fetchState().then(() => {
-      applyBlur();
+      applyRiskUI();
       updateBadge();
       if (shouldShowIntent()) {
         showIntentPrompt();
@@ -326,7 +397,7 @@
       if (currentState) {
         currentState.snooze = msg.snooze;
       }
-      applyBlur();
+      applyRiskUI();
       updateBadge();
 
       if (msg.snooze.active) {
@@ -338,6 +409,13 @@
         clearTimeout(toastMidpointTimer);
         toastMidpointTimer = null;
       }
+    }
+    if (msg.type === "session-updated") {
+      if (currentState) {
+        currentState.session = msg.session;
+      }
+      applyRiskUI();
+      updateBadge();
     }
   });
 

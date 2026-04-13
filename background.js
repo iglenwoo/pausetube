@@ -17,6 +17,7 @@ const EMPTY_SESSION = {
   lastActivity: null,
   snoozeCount: 0,
   totalSnoozedMs: 0,
+  shortStreak: 0,
 };
 
 const EMPTY_SNOOZE = {
@@ -145,17 +146,19 @@ async function syncTimerWithYouTubeTabs() {
 
 // --- Video Tracking ---
 
-async function trackVideo(videoId) {
+async function trackVideo(videoId, isShorts = false) {
   const { session } = await getState();
   if (!videoId || session.videosWatched.includes(videoId)) return;
 
   session.videosWatched.push(videoId);
   session.videoCount = session.videosWatched.length;
   session.lastActivity = Date.now();
+  session.shortStreak = isShorts ? (session.shortStreak || 0) + 1 : 0;
   await chrome.storage.local.set({ session });
 
   await checkSnoozeVideoLimit();
   await updateBadge();
+  notifyContentScripts({ type: "session-updated", session });
 }
 
 // --- Snooze Management ---
@@ -278,20 +281,23 @@ chrome.runtime.onStartup.addListener(async () => {
 
 // --- Navigation Tracking ---
 
-function extractVideoId(url) {
-  if (url.pathname === "/watch") return url.searchParams.get("v");
-  if (url.pathname.startsWith("/shorts/")) return url.pathname.split("/shorts/")[1] || null;
-  return null;
+function extractVideoInfo(url) {
+  if (url.pathname === "/watch") return { videoId: url.searchParams.get("v"), isShorts: false };
+  if (url.pathname.startsWith("/shorts/")) {
+    const videoId = url.pathname.split("/shorts/")[1]?.split("?")[0] || null;
+    return { videoId, isShorts: true };
+  }
+  return { videoId: null, isShorts: false };
 }
 
 chrome.webNavigation.onHistoryStateUpdated.addListener(
   async (details) => {
     if (details.frameId !== 0) return;
     const url = new URL(details.url);
-    const videoId = extractVideoId(url);
+    const { videoId, isShorts } = extractVideoInfo(url);
     if (videoId) {
       await ensureSession();
-      await trackVideo(videoId);
+      await trackVideo(videoId, isShorts);
     }
   },
   { url: [{ hostContains: "youtube.com" }] }
@@ -302,10 +308,10 @@ chrome.webNavigation.onCompleted.addListener(
   async (details) => {
     if (details.frameId !== 0) return;
     const url = new URL(details.url);
-    const videoId = extractVideoId(url);
+    const { videoId, isShorts } = extractVideoInfo(url);
     if (videoId) {
       await ensureSession();
-      await trackVideo(videoId);
+      await trackVideo(videoId, isShorts);
     }
   },
   { url: [{ hostContains: "youtube.com" }] }
@@ -340,6 +346,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .then(() => syncTimerWithYouTubeTabs())
       .then(() => updateBadge())
       .then(() => sendResponse({ ok: true }));
+    return true;
+  }
+  if (msg.type === "close-tab") {
+    chrome.tabs.remove(sender.tab.id);
+    sendResponse({ ok: true });
     return true;
   }
 });
