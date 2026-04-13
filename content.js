@@ -30,7 +30,11 @@
   function getElapsedMs(session) {
     const base = session.elapsedMs || 0;
     if (!session.timerStartedAt) return base;
-    return base + (Date.now() - session.timerStartedAt);
+    const now = Date.now();
+    // Cap at lastActivity so a stale timerStartedAt (from before sleep)
+    // doesn't inflate the displayed elapsed time.
+    const cap = session.lastActivity ? Math.min(now, session.lastActivity) : now;
+    return base + Math.max(0, cap - session.timerStartedAt);
   }
 
   function getRiskLevel() {
@@ -417,6 +421,15 @@
       }
     });
   }
+
+  // On tab becoming visible (laptop wake, tab switch back), immediately
+  // sync state so a stale session is reset before the user sees it.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      chrome.runtime.sendMessage({ type: "heartbeat" }).catch(() => {});
+      fetchState().then(() => { updateBadge(); applyRiskUI(); });
+    }
+  });
 
   // YouTube fires this custom event on SPA navigation
   document.addEventListener("yt-navigate-finish", onNavigate);

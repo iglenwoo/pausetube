@@ -54,7 +54,10 @@ async function getState() {
 function getElapsedMs(session, now = Date.now()) {
   const elapsedMs = session.elapsedMs || 0;
   if (!session.timerStartedAt) return elapsedMs;
-  return elapsedMs + (now - session.timerStartedAt);
+  // Cap at lastActivity so a stale timerStartedAt (from before laptop sleep)
+  // doesn't accumulate hours of elapsed time.
+  const effectiveNow = session.lastActivity ? Math.min(now, session.lastActivity) : now;
+  return elapsedMs + Math.max(0, effectiveNow - session.timerStartedAt);
 }
 
 function pauseTimer(session, now = Date.now()) {
@@ -76,8 +79,16 @@ function resumeTimer(session, now = Date.now()) {
 }
 
 async function ensureSession() {
-  const { session, settings } = await getState();
+  let { session, settings } = await getState();
   const now = Date.now();
+
+  // If the timer is running but lastActivity is stale (laptop slept without
+  // triggering onStartup), pause the timer at lastActivity before checking
+  // the timeout — otherwise elapsed keeps growing through the sleep gap.
+  if (session.timerStartedAt && session.lastActivity && (now - session.lastActivity) > 2 * 60 * 1000) {
+    session = pauseTimer(session, session.lastActivity);
+    await chrome.storage.local.set({ session });
+  }
 
   // Reset session if timed out
   if (session.lastActivity) {
