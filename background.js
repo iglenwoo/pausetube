@@ -237,6 +237,7 @@ async function updateBadge() {
 
   if (snooze.active) {
     chrome.action.setBadgeBackgroundColor({ color: "#6B7280" });
+    chrome.action.setBadgeTextColor?.({ color: "#FFFFFF" });
     if (snooze.expiresAt) {
       const remainingMin = Math.ceil(Math.max(0, snooze.expiresAt - Date.now()) / 60000);
       chrome.action.setBadgeText({ text: `${remainingMin}m` });
@@ -254,6 +255,7 @@ async function updateBadge() {
   const elapsedMin = Math.floor(getElapsedMs(session) / 1000 / 60);
   const text = `${elapsedMin}m`;
   chrome.action.setBadgeBackgroundColor({ color: "#EF4444" });
+  chrome.action.setBadgeTextColor?.({ color: "#FFFFFF" });
   chrome.action.setBadgeText({ text });
 }
 

@@ -11,6 +11,7 @@
   let toastMidpointTimer = null;
   let stateLabelShown = false;
   let lastKnownSessionStart = null;
+  let lastDisplayedMinute = null;
 
   // --- State ---
 
@@ -213,6 +214,7 @@
     if (currentState?.session?.startTime !== lastKnownSessionStart) {
       lastKnownSessionStart = currentState?.session?.startTime || null;
       stateLabelShown = false;
+      lastDisplayedMinute = null;
     }
 
     if (risk === "snoozed" || risk === "none") {
@@ -305,6 +307,7 @@
     });
 
     document.body.appendChild(overlay);
+    requestAnimationFrame(() => input.focus());
   }
 
   function showIntentSticky() {
@@ -399,6 +402,26 @@
     }
 
     badgeEl.innerHTML = `<span class="offtube-badge-dot"></span>${text}`;
+
+    if (
+      lastDisplayedMinute !== null &&
+      min !== lastDisplayedMinute &&
+      min > 0 &&
+      !snoozed &&
+      !document.querySelector(".offtube-feed-banner")
+    ) {
+      pulseMinute(min);
+    }
+    lastDisplayedMinute = min;
+  }
+
+  function pulseMinute(min) {
+    document.querySelector(".offtube-minute-pulse")?.remove();
+    const pulse = document.createElement("div");
+    pulse.className = "offtube-minute-pulse";
+    pulse.textContent = `${min}m`;
+    document.body.appendChild(pulse);
+    setTimeout(() => pulse.remove(), 1000);
   }
 
   // --- Lifecycle ---
