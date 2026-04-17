@@ -377,8 +377,8 @@
 
 .offtube-intent-sticky {
   position: fixed;
-  top: 8px;
-  right: 8px;
+  bottom: 16px;
+  left: 16px;
   background: #1a1a2e;
   color: #a5b4fc;
   padding: 8px 14px;
@@ -404,7 +404,7 @@
 .offtube-badge {
   position: fixed;
   bottom: 16px;
-  left: 16px;
+  right: 16px;
   background: #1a1a2e;
   color: #e0e0e0;
   padding: 8px 14px;
