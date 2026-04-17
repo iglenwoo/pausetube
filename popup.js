@@ -6,6 +6,7 @@ const snoozeControls = document.getElementById("snooze-controls");
 const snoozeActiveEl = document.getElementById("snooze-active");
 const snoozeRemaining = document.getElementById("snooze-remaining");
 const snoozeCancelBtn = document.getElementById("snooze-cancel");
+const sessionCancelBtn = document.getElementById("session-cancel");
 
 async function loadState() {
   try {
@@ -41,16 +42,24 @@ function render(state) {
     intentEl.classList.add("empty");
   }
 
-  // Snooze state
-  if (snooze.active) {
+  // Session controls only appear once the user has committed (intent chosen)
+  const hasSession = Boolean(session.startTime && session.intent);
+
+  if (!hasSession) {
+    snoozeControls.style.display = "none";
+    snoozeActiveEl.style.display = "none";
+    sessionCancelBtn.classList.add("hidden");
+  } else if (snooze.active) {
     snoozeControls.style.display = "none";
     snoozeActiveEl.style.display = "flex";
     const remaining = snooze.expiresAt ? Math.max(0, snooze.expiresAt - Date.now()) : 0;
     const min = Math.ceil(remaining / 60000);
     snoozeRemaining.textContent = `Snoozed · ${min}m left`;
+    sessionCancelBtn.classList.remove("hidden");
   } else {
     snoozeControls.style.display = "flex";
     snoozeActiveEl.style.display = "none";
+    sessionCancelBtn.classList.remove("hidden");
   }
 }
 
@@ -67,6 +76,11 @@ document.querySelectorAll(".snooze-btn").forEach((btn) => {
 
 snoozeCancelBtn.addEventListener("click", async () => {
   await chrome.runtime.sendMessage({ type: "end-snooze" });
+  await loadState();
+});
+
+sessionCancelBtn.addEventListener("click", async () => {
+  await chrome.runtime.sendMessage({ type: "reset-session" });
   await loadState();
 });
 

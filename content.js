@@ -416,12 +416,15 @@
   }
 
   function pulseMinute(min) {
-    document.querySelector(".offtube-minute-pulse")?.remove();
+    document.querySelector(".offtube-minute-pulse-backdrop")?.remove();
+    const backdrop = document.createElement("div");
+    backdrop.className = "offtube-minute-pulse-backdrop";
     const pulse = document.createElement("div");
     pulse.className = "offtube-minute-pulse";
-    pulse.textContent = `${min}m`;
-    document.body.appendChild(pulse);
-    setTimeout(() => pulse.remove(), 1000);
+    pulse.textContent = `${min}`;
+    backdrop.appendChild(pulse);
+    document.body.appendChild(backdrop);
+    setTimeout(() => backdrop.remove(), 1000);
   }
 
   // --- Lifecycle ---
@@ -514,6 +517,11 @@
       }
       applyRiskUI();
       updateBadge();
+
+      if (!msg.session?.intent) {
+        removeIntentSticky();
+        if (shouldShowIntent()) showIntentPrompt();
+      }
     }
   });
 

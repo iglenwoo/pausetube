@@ -109,6 +109,29 @@
       border-color: #ef4444;
       color: #ef4444;
     }
+
+    .session-cancel {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      padding: 8px;
+      background: none;
+      border: 1px solid #2a2a3e;
+      border-radius: 6px;
+      color: #888;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .session-cancel:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .session-cancel.hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -130,6 +153,8 @@
     <span class="remaining" id="snooze-remaining">—</span>
     <button class="snooze-cancel" id="snooze-cancel">End snooze</button>
   </div>
+
+  <button class="session-cancel hidden" id="session-cancel">Cancel session</button>
 
   <script src="popup.js"></script>
 </body>
