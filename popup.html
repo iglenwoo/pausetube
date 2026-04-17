@@ -10,91 +10,65 @@
     }
 
     body {
-      width: 300px;
+      width: 280px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: #0f0f23;
       color: #e0e0e0;
-      padding: 20px;
+      padding: 16px;
     }
 
     .header {
       display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .header h1 {
-      font-size: 18px;
-      font-weight: 600;
-    }
-
-    .header .version {
-      font-size: 11px;
-      color: #666;
-    }
-
-    /* Stats */
-    .stats {
-      background: #1a1a2e;
-      border-radius: 10px;
-      padding: 14px;
-      margin-bottom: 16px;
-    }
-
-    .stat-row {
-      display: flex;
       justify-content: space-between;
-      align-items: center;
-      padding: 4px 0;
-    }
-
-    .stat-label {
-      color: #888;
-      font-size: 13px;
-    }
-
-    .stat-value {
-      font-size: 13px;
-      font-weight: 500;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .intent-display {
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid #2a2a3e;
-    }
-
-    .intent-text {
-      color: #a5b4fc;
-      font-size: 12px;
-      font-style: italic;
-    }
-
-    /* Snooze */
-    .section-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #666;
+      align-items: baseline;
       margin-bottom: 10px;
     }
 
-    .snooze-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 12px;
+    .header h1 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .stats {
+      font-size: 12px;
+      color: #888;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .intent {
+      color: #a5b4fc;
+      font-size: 12px;
+      font-style: italic;
+      margin-bottom: 16px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .intent.empty {
+      display: none;
+    }
+
+    .snooze-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .snooze-label {
+      font-size: 12px;
+      color: #666;
     }
 
     .snooze-btn {
-      padding: 8px 4px;
+      flex: 1;
+      padding: 10px 4px;
       background: #1a1a2e;
       border: 1px solid #2a2a3e;
       border-radius: 8px;
       color: #e0e0e0;
-      font-size: 12px;
+      font-size: 13px;
+      font-weight: 500;
       cursor: pointer;
       text-align: center;
       transition: all 0.15s;
@@ -105,60 +79,27 @@
       border-color: #6366f1;
     }
 
-    .snooze-btn.active {
-      background: #6366f1;
-      border-color: #6366f1;
-    }
-
-    .snooze-start {
-      width: 100%;
-      padding: 10px;
-      background: #6366f1;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      margin-top: 4px;
-      transition: background 0.15s;
-    }
-
-    .snooze-start:hover {
-      background: #4f46e5;
-    }
-
-    .snooze-start:disabled {
-      background: #333;
-      cursor: not-allowed;
-    }
-
     /* Active snooze */
     .snooze-active {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       background: #1a1a2e;
-      border-radius: 10px;
-      padding: 14px;
-      text-align: center;
-    }
-
-    .snooze-active p {
-      font-size: 13px;
-      color: #888;
-      margin-bottom: 10px;
+      border-radius: 8px;
+      padding: 10px 14px;
     }
 
     .snooze-active .remaining {
-      font-size: 20px;
-      font-weight: 600;
+      font-size: 13px;
       color: #a5b4fc;
-      margin-bottom: 12px;
+      font-variant-numeric: tabular-nums;
     }
 
     .snooze-cancel {
-      padding: 8px 20px;
+      padding: 6px 12px;
       background: none;
       border: 1px solid #333;
-      border-radius: 8px;
+      border-radius: 6px;
       color: #888;
       font-size: 12px;
       cursor: pointer;
@@ -173,48 +114,20 @@
 <body>
   <div class="header">
     <h1>OffTube</h1>
-    <span class="version">v0.1</span>
+    <span class="stats" id="stats">—</span>
   </div>
 
-  <!-- Session Stats -->
-  <div class="stats">
-    <div class="stat-row">
-      <span class="stat-label">Session time</span>
-      <span class="stat-value" id="stat-time">—</span>
-    </div>
-    <div class="stat-row">
-      <span class="stat-label">Videos watched</span>
-      <span class="stat-value" id="stat-videos">0</span>
-    </div>
-    <div class="intent-display" id="intent-display" style="display: none">
-      <span class="stat-label">Intent:</span>
-      <span class="intent-text" id="intent-text"></span>
-    </div>
+  <div class="intent empty" id="intent"></div>
+
+  <div class="snooze-row" id="snooze-controls">
+    <span class="snooze-label">Snooze</span>
+    <button class="snooze-btn" data-minutes="1">1m</button>
+    <button class="snooze-btn" data-minutes="5">5m</button>
+    <button class="snooze-btn" data-minutes="10">10m</button>
   </div>
 
-  <!-- Snooze Controls (shown when NOT snoozed) -->
-  <div id="snooze-controls">
-    <div class="section-title">Snooze — Time</div>
-    <div class="snooze-grid" id="time-options">
-      <button class="snooze-btn" data-minutes="1">1m</button>
-      <button class="snooze-btn" data-minutes="5">5m</button>
-      <button class="snooze-btn" data-minutes="10">10m</button>
-    </div>
-
-    <div class="section-title">Snooze — Videos</div>
-    <div class="snooze-grid" id="video-options">
-      <button class="snooze-btn" data-videos="1">1</button>
-      <button class="snooze-btn" data-videos="2">2</button>
-      <button class="snooze-btn" data-videos="3">3</button>
-    </div>
-
-    <button class="snooze-start" id="snooze-start" disabled>Select a snooze option</button>
-  </div>
-
-  <!-- Active Snooze (shown when snoozed) -->
-  <div id="snooze-active" class="snooze-active" style="display: none">
-    <p>Snoozed</p>
-    <div class="remaining" id="snooze-remaining">—</div>
+  <div class="snooze-active" id="snooze-active" style="display: none">
+    <span class="remaining" id="snooze-remaining">—</span>
     <button class="snooze-cancel" id="snooze-cancel">End snooze</button>
   </div>
 

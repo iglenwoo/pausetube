@@ -42,8 +42,8 @@
     if (isSnoozed()) return "snoozed";
     const elapsed = getElapsedMs(currentState.session);
     const shortStreak = currentState.session?.shortStreak || 0;
-    if (elapsed >= 15 * 60 * 1000 || shortStreak >= 3) return "high";
-    if (elapsed >= 10 * 60 * 1000) return "medium";
+    if (elapsed >= 2 * 60 * 1000 || shortStreak >= 3) return "high";
+    if (elapsed >= 1 * 60 * 1000) return "medium";
     return "none";
   }
 
@@ -63,27 +63,51 @@
     const INHALE_S = 4;
     const EXHALE_S = 4;
 
-    phaseLabel.textContent = "inhale";
-    countLabel.textContent = INHALE_S;
-    // rAF ensures the initial scale(0.7) is painted before transition fires
-    requestAnimationFrame(() => circle.classList.add("inhaling"));
+    // Pre-inhale buffer: 1s "ready" state
+    phaseLabel.textContent = "ready";
+    countLabel.textContent = "";
 
-    let elapsed = 0;
-    const tick = setInterval(() => {
-      elapsed++;
-      if (elapsed < INHALE_S) {
-        countLabel.textContent = INHALE_S - elapsed;
-      } else if (elapsed === INHALE_S) {
-        phaseLabel.textContent = "exhale";
-        countLabel.textContent = EXHALE_S;
-        circle.classList.remove("inhaling");
-      } else if (elapsed < INHALE_S + EXHALE_S) {
-        countLabel.textContent = (INHALE_S + EXHALE_S) - elapsed;
-      } else {
-        clearInterval(tick);
-        onComplete();
-      }
-    }, 1000);
+    setTimeout(() => {
+      // Begin inhale
+      phaseLabel.textContent = "inhale";
+      countLabel.textContent = INHALE_S;
+      // rAF ensures the initial scale(0.7) is painted before transition fires
+      requestAnimationFrame(() => circle.classList.add("inhaling"));
+
+      let inhaleElapsed = 0;
+      const inhaleTick = setInterval(() => {
+        inhaleElapsed++;
+        if (inhaleElapsed < INHALE_S) {
+          countLabel.textContent = INHALE_S - inhaleElapsed;
+        } else {
+          clearInterval(inhaleTick);
+          // Hold buffer: 1s — circle stays expanded
+          phaseLabel.textContent = "hold";
+          countLabel.textContent = "";
+
+          setTimeout(() => {
+            // Begin exhale
+            phaseLabel.textContent = "exhale";
+            countLabel.textContent = EXHALE_S;
+            circle.classList.remove("inhaling");
+
+            let exhaleElapsed = 0;
+            const exhaleTick = setInterval(() => {
+              exhaleElapsed++;
+              if (exhaleElapsed < EXHALE_S) {
+                countLabel.textContent = EXHALE_S - exhaleElapsed;
+              } else {
+                clearInterval(exhaleTick);
+                // Post-exhale buffer: 0.5s before showing choices
+                phaseLabel.textContent = "";
+                countLabel.textContent = "";
+                setTimeout(onComplete, 500);
+              }
+            }, 1000);
+          }, 1000); // 1s hold after inhale
+        }
+      }, 1000);
+    }, 1000); // 1s pre-inhale buffer
   }
 
   function showSnoozePhase(banner) {
@@ -105,15 +129,9 @@
     const min = Math.floor(elapsed / 60000);
     const videos = session.videoCount || 0;
     const shortStreak = session.shortStreak || 0;
-    const intent = session.intent && session.intent !== "Just browsing" ? session.intent : null;
-
     const stateText = shortStreak >= 3
       ? `${shortStreak} Shorts in a row`
       : `${min} min here · ${videos} video${videos !== 1 ? "s" : ""}`;
-
-    const intentBtnHtml = intent
-      ? `<button class="offtube-choice-intent">Back to: ${intent}</button>`
-      : "";
 
     const banner = document.createElement("div");
     banner.className = "offtube-feed-banner";
@@ -121,16 +139,16 @@
       <div class="offtube-phase-breathe">
         <div class="offtube-breathe-circle"></div>
         <div class="offtube-breathe-text">
-          <span class="offtube-breathe-phase">inhale</span>
-          <span class="offtube-breathe-count">4</span>
+          <span class="offtube-breathe-phase">ready</span>
+          <span class="offtube-breathe-count"></span>
         </div>
       </div>
       <div class="offtube-phase-snooze">
         <p class="offtube-snooze-state">${stateText}</p>
         <button class="offtube-choice-done">I'm done</button>
+        <button class="offtube-choice-snooze" data-minutes="1">1 more min</button>
         <button class="offtube-choice-snooze" data-minutes="3">3 more min</button>
-        <button class="offtube-choice-snooze" data-minutes="10">10 more min</button>
-        ${intentBtnHtml}
+        <button class="offtube-choice-cancel">Cancel session</button>
       </div>
     `;
 
@@ -144,8 +162,12 @@
       chrome.runtime.sendMessage({ type: "close-tab" });
     });
 
-    banner.querySelector(".offtube-choice-intent")?.addEventListener("click", () => {
-      handleSnoozeClick(10, null);
+    banner.querySelector(".offtube-choice-cancel")?.addEventListener("click", async () => {
+      await chrome.runtime.sendMessage({ type: "reset-session" });
+      await fetchState();
+      applyRiskUI();
+      removeIntentSticky();
+      if (shouldShowIntent()) showIntentPrompt();
     });
 
     document.body.appendChild(banner);
@@ -173,7 +195,7 @@
     setTimeout(() => {
       label.classList.add("offtube-state-label-hide");
       setTimeout(() => label.remove(), 500);
-    }, 8000);
+    }, 1000);
 
     stateLabelShown = true;
   }

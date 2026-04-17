@@ -364,6 +364,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sendResponse({ ok: true });
     return true;
   }
+  if (msg.type === "reset-session") {
+    (async () => {
+      const now = Date.now();
+      const newSession = {
+        ...EMPTY_SESSION,
+        startTime: now,
+        timerStartedAt: now,
+        lastActivity: now,
+      };
+      await chrome.storage.local.set({ session: newSession, snooze: EMPTY_SNOOZE });
+      notifyContentScripts({ type: "session-updated", session: newSession });
+      notifyContentScripts({ type: "snooze-changed", snooze: EMPTY_SNOOZE });
+      sendResponse({ ok: true });
+    })();
+    return true;
+  }
 });
 
 // --- Helpers ---
