@@ -221,9 +221,6 @@
       document.documentElement.classList.remove("offtube-blur");
       removeFeedHiddenBanner();
       removeStateLabel();
-      if (risk === "snoozed") {
-        document.querySelectorAll("video").forEach((v) => v.play().catch(() => {}));
-      }
       return;
     }
 
@@ -495,6 +492,7 @@
   // Listen for messages from background
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === "snooze-changed") {
+      const wasSnoozed = currentState?.snooze?.active === true;
       if (currentState) {
         currentState.snooze = msg.snooze;
       }
@@ -502,6 +500,9 @@
       updateBadge();
 
       if (msg.snooze.active) {
+        if (!wasSnoozed) {
+          document.querySelectorAll("video").forEach((v) => v.play().catch(() => {}));
+        }
         fetchState().then(() => {
           showToast();
           scheduleToastMidpoint();
