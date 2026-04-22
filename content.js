@@ -58,21 +58,44 @@
 
   function runBreathing(banner, onComplete) {
     const circle = banner.querySelector(".offtube-breathe-circle");
-    const phaseLabel = banner.querySelector(".offtube-breathe-phase");
+    const viewport = banner.querySelector(".offtube-breathe-viewport");
+    const strip = banner.querySelector(".offtube-breathe-strip");
+    const steps = banner.querySelectorAll(".offtube-breathe-step");
     const countLabel = banner.querySelector(".offtube-breathe-count");
 
     const INHALE_S = 4;
     const EXHALE_S = 4;
+    const PHASES = ["ready", "inhale", "hold", "exhale"];
 
-    // Pre-inhale buffer: 1s "ready" state
-    phaseLabel.textContent = "ready";
+    function translateToStep(stepEl) {
+      // Center stepEl in the viewport by translating the strip.
+      const stepCenter = stepEl.offsetLeft + stepEl.offsetWidth / 2;
+      const viewportCenter = viewport.clientWidth / 2;
+      strip.style.transform = `translateX(${viewportCenter - stepCenter}px)`;
+    }
+
+    function setActivePhase(name) {
+      const activeIdx = PHASES.indexOf(name);
+      steps.forEach((step, idx) => {
+        step.classList.toggle("active", idx === activeIdx);
+        step.classList.toggle("past", activeIdx >= 0 && idx < activeIdx);
+      });
+      if (activeIdx >= 0) translateToStep(steps[activeIdx]);
+    }
+
+    // Initial position without animation (strip starts off-center otherwise).
+    strip.style.transition = "none";
+    setActivePhase("ready");
+    // Force a frame so the initial transform lands, then re-enable transition.
+    requestAnimationFrame(() => {
+      strip.style.transition = "";
+    });
     countLabel.textContent = "";
 
     setTimeout(() => {
-      // Begin inhale
-      phaseLabel.textContent = "inhale";
+      // t=1s: inhale
+      setActivePhase("inhale");
       countLabel.textContent = INHALE_S;
-      // rAF ensures the initial scale(0.7) is painted before transition fires
       requestAnimationFrame(() => circle.classList.add("inhaling"));
 
       let inhaleElapsed = 0;
@@ -82,13 +105,13 @@
           countLabel.textContent = INHALE_S - inhaleElapsed;
         } else {
           clearInterval(inhaleTick);
-          // Hold buffer: 1s — circle stays expanded
-          phaseLabel.textContent = "hold";
+          // t=5s: hold
+          setActivePhase("hold");
           countLabel.textContent = "";
 
           setTimeout(() => {
-            // Begin exhale
-            phaseLabel.textContent = "exhale";
+            // t=6s: exhale
+            setActivePhase("exhale");
             countLabel.textContent = EXHALE_S;
             circle.classList.remove("inhaling");
 
@@ -99,16 +122,23 @@
                 countLabel.textContent = EXHALE_S - exhaleElapsed;
               } else {
                 clearInterval(exhaleTick);
-                // Post-exhale buffer: 0.5s before showing choices
-                phaseLabel.textContent = "";
+                // t=10s: drift past exhale so the strip glides off to the left.
+                steps.forEach((step) => {
+                  step.classList.remove("active");
+                  step.classList.add("past");
+                });
+                const last = steps[steps.length - 1];
+                const viewportCenter = viewport.clientWidth / 2;
+                const pastEnd = last.offsetLeft + last.offsetWidth + 40;
+                strip.style.transform = `translateX(${viewportCenter - pastEnd}px)`;
                 countLabel.textContent = "";
                 setTimeout(onComplete, 500);
               }
             }, 1000);
-          }, 1000); // 1s hold after inhale
+          }, 1000);
         }
       }, 1000);
-    }, 1000); // 1s pre-inhale buffer
+    }, 1000);
   }
 
   function showSnoozePhase(banner) {
@@ -138,9 +168,20 @@
     banner.className = "offtube-feed-banner";
     banner.innerHTML = `
       <div class="offtube-phase-breathe">
+        <div class="offtube-breathe-title">Deep Breath</div>
         <div class="offtube-breathe-circle"></div>
         <div class="offtube-breathe-text">
-          <span class="offtube-breathe-phase">ready</span>
+          <div class="offtube-breathe-viewport">
+            <div class="offtube-breathe-strip">
+              <span class="offtube-breathe-step" data-phase="ready">ready</span>
+              <span class="offtube-breathe-arrow">→</span>
+              <span class="offtube-breathe-step" data-phase="inhale">inhale</span>
+              <span class="offtube-breathe-arrow">→</span>
+              <span class="offtube-breathe-step" data-phase="hold">hold</span>
+              <span class="offtube-breathe-arrow">→</span>
+              <span class="offtube-breathe-step" data-phase="exhale">exhale</span>
+            </div>
+          </div>
           <span class="offtube-breathe-count"></span>
         </div>
       </div>
@@ -152,8 +193,6 @@
         <button class="offtube-choice-cancel">Cancel session</button>
       </div>
     `;
-
-    runBreathing(banner, () => showSnoozePhase(banner));
 
     banner.querySelectorAll("[data-minutes]").forEach((btn) => {
       btn.addEventListener("click", () => handleSnoozeClick(Number(btn.dataset.minutes), null));
@@ -172,6 +211,7 @@
     });
 
     document.body.appendChild(banner);
+    runBreathing(banner, () => showSnoozePhase(banner));
   }
 
   function removeFeedHiddenBanner() {
