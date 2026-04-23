@@ -9,7 +9,6 @@
   let stickyEl = null;
   let badgeInterval = null;
   let toastMidpointTimer = null;
-  let stateLabelShown = false;
   let lastKnownSessionStart = null;
   let lastDisplayedMinute = null;
 
@@ -44,7 +43,6 @@
     const elapsed = getElapsedMs(currentState.session);
     const shortStreak = currentState.session?.shortStreak || 0;
     if (elapsed >= 2 * 60 * 1000 || shortStreak >= 3) return "high";
-    if (elapsed >= 1 * 60 * 1000) return "medium";
     return "none";
   }
 
@@ -218,63 +216,25 @@
     document.querySelector(".offtube-feed-banner")?.remove();
   }
 
-  // --- State Label (medium risk) ---
-
-  function showStateLabel() {
-    if (document.querySelector(".offtube-state-label")) return;
-
-    const session = currentState?.session || {};
-    const elapsed = getElapsedMs(session);
-    const min = Math.floor(elapsed / 60000);
-    const videos = session.videoCount || 0;
-
-    const label = document.createElement("div");
-    label.className = "offtube-state-label";
-    label.textContent = `${min} min here · ${videos} video${videos !== 1 ? "s" : ""}`;
-    document.body.appendChild(label);
-
-    setTimeout(() => {
-      label.classList.add("offtube-state-label-hide");
-      setTimeout(() => label.remove(), 500);
-    }, 1000);
-
-    stateLabelShown = true;
-  }
-
-  function removeStateLabel() {
-    document.querySelector(".offtube-state-label")?.remove();
-  }
-
   // --- Risk UI ---
 
   function applyRiskUI() {
     const risk = getRiskLevel();
 
-    // Reset state label tracking when session resets
     if (currentState?.session?.startTime !== lastKnownSessionStart) {
       lastKnownSessionStart = currentState?.session?.startTime || null;
-      stateLabelShown = false;
       lastDisplayedMinute = null;
     }
 
     if (risk === "snoozed" || risk === "none") {
       document.documentElement.classList.remove("offtube-blur");
       removeFeedHiddenBanner();
-      removeStateLabel();
-      return;
-    }
-
-    if (risk === "medium") {
-      document.documentElement.classList.remove("offtube-blur");
-      removeFeedHiddenBanner();
-      if (!stateLabelShown) showStateLabel();
       return;
     }
 
     // high
     document.documentElement.classList.add("offtube-blur");
     document.querySelectorAll("video").forEach((v) => v.pause());
-    removeStateLabel();
     showFeedHiddenBanner();
   }
 

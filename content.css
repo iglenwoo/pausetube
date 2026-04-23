@@ -4,12 +4,12 @@
 
 /* Home feed */
 .offtube-blur ytd-browse[page-subtype="home"] #primary {
-  display: none !important;
+  visibility: hidden !important;
 }
 
 /* Watch page sidebar recommendations */
 .offtube-blur ytd-watch-flexy #secondary {
-  display: none !important;
+  visibility: hidden !important;
 }
 
 /* Full-page dim overlay — sits behind the banner (z-index 9998 < 9999) */
@@ -24,7 +24,7 @@
 
 /* Search results */
 .offtube-blur ytd-search #primary {
-  display: none !important;
+  visibility: hidden !important;
 }
 
 /* --- Feed Hidden Banner --- */
@@ -227,32 +227,6 @@
 
 .offtube-choice-cancel:hover {
   color: #a5b4fc;
-}
-
-/* --- State Label (medium risk) --- */
-
-.offtube-state-label {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(26, 26, 46, 0.95);
-  color: #e0e0e0;
-  padding: 14px 28px;
-  border-radius: 20px;
-  font-size: 16px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-variant-numeric: tabular-nums;
-  z-index: 99999;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  opacity: 1;
-  transition: opacity 0.5s ease;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.offtube-state-label-hide {
-  opacity: 0;
 }
 
 /* --- Minute Pulse (every 1m tick) --- */
