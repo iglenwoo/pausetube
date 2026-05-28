@@ -1,21 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs>
-    <clipPath id="c">
-      <rect x="8" y="24" width="112" height="80" rx="16"/>
-    </clipPath>
-  </defs>
+  <!-- Outer ring with a gap at lower-right -->
+  <circle cx="64" cy="64" r="50" fill="none" stroke="#6366f1" stroke-width="9"
+          stroke-linecap="round" stroke-dasharray="262 52"
+          transform="rotate(150 64 64)"/>
 
-  <!-- YouTube-shape background in brand indigo -->
-  <rect x="8" y="24" width="112" height="80" rx="16" fill="#6366f1"/>
-
-  <g clip-path="url(#c)">
-    <!-- Play triangle (same layout as YouTube's) -->
-    <polygon points="44,38 44,90 94,64" fill="white"/>
-
-    <!-- Diagonal slash: white halo + indigo core = cuts visibly through triangle -->
-    <line x1="94" y1="28" x2="28" y2="100"
-          stroke="white"   stroke-width="18" stroke-linecap="round"/>
-    <line x1="94" y1="28" x2="28" y2="100"
-          stroke="#6366f1" stroke-width="9"  stroke-linecap="round"/>
-  </g>
+  <!-- Inner play disc -->
+  <circle cx="64" cy="64" r="30" fill="#6366f1"/>
+  <polygon points="57,49 57,79 82,64" fill="white"/>
 </svg>
