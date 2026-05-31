@@ -1,2 +1,9 @@
+# Dependencies
 node_modules/
 icons/node_modules/
+
+# OS / editor / tooling artifacts
+.DS_Store
+.idea/
+.vscode/
+.claude/
