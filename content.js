@@ -202,7 +202,7 @@
     });
 
     banner.querySelector(".offtube-choice-done")?.addEventListener("click", () => {
-      chrome.runtime.sendMessage({ type: "close-tab" });
+      chrome.runtime.sendMessage({ type: "done-session" });
     });
 
     banner.querySelector(".offtube-choice-cancel")?.addEventListener("click", async () => {
@@ -494,17 +494,27 @@
   });
   urlObserver.observe(document.body, { childList: true, subtree: true });
 
-  // Listen for messages from background
-  chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.type === "snooze-changed") {
-      const wasSnoozed = currentState?.snooze?.active === true;
-      if (currentState) {
-        currentState.snooze = msg.snooze;
-      }
+  // Cross-tab state sync. session/snooze/settings are a single source of truth
+  // in chrome.storage.local; the background worker (and debug console) only ever
+  // mutate them there. Reacting to storage changes — rather than to targeted
+  // runtime messages — keeps every YouTube tab rendering off the same state no
+  // matter which tab or context made the change, and no mutation site has to
+  // remember to broadcast.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local") return;
+    if (!currentState) currentState = { session: {}, snooze: {}, settings: {} };
+
+    if (changes.settings) {
+      currentState.settings = changes.settings.newValue || {};
+    }
+
+    if (changes.snooze) {
+      const wasSnoozed = currentState.snooze?.active === true;
+      currentState.snooze = changes.snooze.newValue || {};
       applyRiskUI();
       updateBadge();
 
-      if (msg.snooze.active) {
+      if (currentState.snooze.active) {
         if (!wasSnoozed) {
           document.querySelectorAll("video").forEach((v) => v.play().catch(() => {}));
         }
@@ -517,17 +527,32 @@
         toastMidpointTimer = null;
       }
     }
-    if (msg.type === "session-updated") {
-      if (currentState) {
-        currentState.session = msg.session;
+
+    if (changes.session) {
+      const prevIntent = currentState.session?.intent ?? null;
+      const session = changes.session.newValue || {};
+      const newIntent = session.intent ?? null;
+      currentState.session = session;
+
+      // Only touch the prompt/sticky when the intent actually changed — session
+      // writes also happen for routine lastActivity/timer bumps, which must not
+      // make the sticky flicker. Reflect intent before applyRiskUI, since
+      // getRiskLevel suppresses the breath banner while the prompt is on screen.
+      if (newIntent !== prevIntent) {
+        if (!newIntent) {
+          removeIntentSticky();
+          if (shouldShowIntent()) showIntentPrompt();
+        } else {
+          // Intent committed (here or in another tab) — drop any lingering
+          // prompt and mirror the chosen goal.
+          document.querySelector(".offtube-intent-overlay")?.remove();
+          if (newIntent === "Just browsing") removeIntentSticky();
+          else showIntentSticky();
+        }
       }
+
       applyRiskUI();
       updateBadge();
-
-      if (!msg.session?.intent) {
-        removeIntentSticky();
-        if (shouldShowIntent()) showIntentPrompt();
-      }
     }
   });
 

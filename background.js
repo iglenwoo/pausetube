@@ -171,7 +171,6 @@ async function trackVideo(videoId, isShorts = false) {
 
   await checkSnoozeVideoLimit();
   await updateBadge();
-  notifyContentScripts({ type: "session-updated", session });
 }
 
 // --- Snooze Management ---
@@ -196,7 +195,6 @@ async function startSnooze(minutes, videoLimit) {
   }
 
   await updateBadge();
-  notifyContentScripts({ type: "snooze-changed", snooze });
 }
 
 async function endSnooze() {
@@ -210,7 +208,6 @@ async function endSnooze() {
   await chrome.storage.local.set({ snooze: EMPTY_SNOOZE });
   chrome.alarms.clear("snooze-expire");
   await updateBadge();
-  notifyContentScripts({ type: "snooze-changed", snooze: EMPTY_SNOOZE });
 }
 
 async function checkSnoozeVideoLimit() {
@@ -360,7 +357,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       session.elapsedMs = 0;
       session.timerStartedAt = now;
       await chrome.storage.local.set({ session });
-      notifyContentScripts({ type: "session-updated", session });
       sendResponse({ ok: true });
     });
     return true;
@@ -380,9 +376,31 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .then(() => sendResponse({ ok: true }));
     return true;
   }
-  if (msg.type === "close-tab") {
-    chrome.tabs.remove(sender.tab.id);
-    sendResponse({ ok: true });
+  if (msg.type === "done-session") {
+    (async () => {
+      // "I'm done" ends the session for *every* tab, not just this one. Closing
+      // the tab alone only resets state when it's the last YouTube tab (see
+      // tabs.onRemoved) — with other tabs still open they'd keep the old at-risk
+      // session and stay blurred. Start a fresh session (startTime set, intent
+      // cleared) so any remaining tabs drop the breath banner and re-prompt for
+      // intent. A fresh session rather than EMPTY_SESSION matters: set-intent
+      // preserves an existing startTime, whereas an empty one would be wiped by
+      // the next ensureSession heartbeat, blowing away the intent just entered.
+      const now = Date.now();
+      const newSession = {
+        ...EMPTY_SESSION,
+        startTime: now,
+        timerStartedAt: now,
+        lastActivity: now,
+      };
+      await chrome.storage.local.set({ session: newSession, snooze: EMPTY_SNOOZE });
+      chrome.alarms.clear("snooze-expire");
+      await updateBadge();
+      sendResponse({ ok: true });
+      // Close this tab last. If it was the only YouTube tab, tabs.onRemoved then
+      // resets to EMPTY_SESSION so the next visit starts clean.
+      if (sender.tab?.id != null) chrome.tabs.remove(sender.tab.id);
+    })();
     return true;
   }
   if (msg.type === "reset-session") {
@@ -395,13 +413,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         lastActivity: now,
       };
       await chrome.storage.local.set({ session: newSession, snooze: EMPTY_SNOOZE });
-      notifyContentScripts({ type: "session-updated", session: newSession });
-      notifyContentScripts({ type: "snooze-changed", snooze: EMPTY_SNOOZE });
       sendResponse({ ok: true });
     })();
     return true;
   }
-  // Debug console: merge-patch any state slice, then refresh badge + content.
+  // Debug console: merge-patch any state slice, then refresh the badge. Content
+  // scripts re-render off the storage write via chrome.storage.onChanged.
   if (msg.type === "debug-apply") {
     (async () => {
       const { session, snooze, settings } = await getState();
@@ -411,30 +428,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg.settings) updates.settings = { ...settings, ...msg.settings };
       await chrome.storage.local.set(updates);
       await updateBadge();
-      if (updates.session) notifyContentScripts({ type: "session-updated", session: updates.session });
-      if (updates.snooze) notifyContentScripts({ type: "snooze-changed", snooze: updates.snooze });
       sendResponse({ ok: true });
     })();
     return true;
   }
-  // Debug console: re-render badge + content after a direct storage write.
+  // Debug console: refresh the badge after a direct storage write. Content
+  // scripts pick the write up themselves via chrome.storage.onChanged.
   if (msg.type === "debug-refresh") {
     (async () => {
-      const { session, snooze } = await getState();
       await updateBadge();
-      notifyContentScripts({ type: "session-updated", session });
-      notifyContentScripts({ type: "snooze-changed", snooze });
       sendResponse({ ok: true });
     })();
     return true;
   }
 });
-
-// --- Helpers ---
-
-async function notifyContentScripts(message) {
-  const tabs = await chrome.tabs.query({ url: "https://www.youtube.com/*" });
-  for (const tab of tabs) {
-    chrome.tabs.sendMessage(tab.id, message).catch(() => {});
-  }
-}
