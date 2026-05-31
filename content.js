@@ -40,9 +40,14 @@
   function getRiskLevel() {
     if (!currentState?.session?.startTime) return "none";
     if (isSnoozed()) return "snoozed";
+    // The session hasn't really started until the user commits to an intent.
+    // While the intent prompt is still on screen, don't count risk time —
+    // set-intent restarts the clock once they answer.
+    if (document.querySelector(".offtube-intent-overlay")) return "none";
+    const settings = currentState.settings || {};
+    const highRiskMs = settings.highRiskMs ?? 2 * 60 * 1000;
     const elapsed = getElapsedMs(currentState.session);
-    const shortStreak = currentState.session?.shortStreak || 0;
-    if (elapsed >= 2 * 60 * 1000 || shortStreak >= 3) return "high";
+    if (elapsed >= highRiskMs) return "high";
     return "none";
   }
 

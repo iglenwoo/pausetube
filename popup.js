@@ -79,6 +79,10 @@ snoozeCancelBtn.addEventListener("click", async () => {
   await loadState();
 });
 
+document.getElementById("debug-link").addEventListener("click", () => {
+  chrome.tabs.create({ url: chrome.runtime.getURL("debug.html") });
+});
+
 sessionCancelBtn.addEventListener("click", async () => {
   await chrome.runtime.sendMessage({ type: "reset-session" });
   await loadState();

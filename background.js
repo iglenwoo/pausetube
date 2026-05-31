@@ -5,6 +5,8 @@ const DEFAULT_SETTINGS = {
   sessionTimeoutMin: 30,
   defaultSnoozeMin: 15,
   defaultSnoozeVideos: 5,
+  highRiskMs: 2 * 60 * 1000, // elapsed time that flips risk to "high"
+  highRiskShortStreak: 3, // consecutive Shorts that flips risk to "high"
 };
 
 const EMPTY_SESSION = {
@@ -46,8 +48,8 @@ async function getState() {
   const data = await chrome.storage.local.get(["session", "snooze", "settings"]);
   return {
     session: { ...EMPTY_SESSION, ...(data.session || {}) },
-    snooze: data.snooze || EMPTY_SNOOZE,
-    settings: data.settings || DEFAULT_SETTINGS,
+    snooze: { ...EMPTY_SNOOZE, ...(data.snooze || {}) },
+    settings: { ...DEFAULT_SETTINGS, ...(data.settings || {}) },
   };
 }
 
@@ -274,7 +276,18 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 chrome.tabs.onRemoved.addListener(async () => {
-  await syncTimerWithYouTubeTabs();
+  if (await hasOpenYouTubeTabs()) {
+    await syncTimerWithYouTubeTabs();
+    await updateBadge();
+    return;
+  }
+
+  // Last YouTube tab closed — end the session so the next visit starts fresh
+  // (new intent prompt), instead of resuming the paused session.
+  const { session } = await getState();
+  if (!session.startTime) return; // nothing to reset
+  await chrome.storage.local.set({ session: EMPTY_SESSION, snooze: EMPTY_SNOOZE });
+  chrome.alarms.clear("snooze-expire");
   await updateBadge();
 });
 
@@ -339,9 +352,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg.type === "set-intent") {
     getState().then(async ({ session }) => {
+      const now = Date.now();
       session.intent = msg.intent;
-      session.lastActivity = Date.now();
+      session.lastActivity = now;
+      // Restart the high-risk countdown from the moment the user commits to an
+      // intent — time spent sitting on the intent prompt shouldn't count.
+      session.elapsedMs = 0;
+      session.timerStartedAt = now;
       await chrome.storage.local.set({ session });
+      notifyContentScripts({ type: "session-updated", session });
       sendResponse({ ok: true });
     });
     return true;
@@ -378,6 +397,33 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       await chrome.storage.local.set({ session: newSession, snooze: EMPTY_SNOOZE });
       notifyContentScripts({ type: "session-updated", session: newSession });
       notifyContentScripts({ type: "snooze-changed", snooze: EMPTY_SNOOZE });
+      sendResponse({ ok: true });
+    })();
+    return true;
+  }
+  // Debug console: merge-patch any state slice, then refresh badge + content.
+  if (msg.type === "debug-apply") {
+    (async () => {
+      const { session, snooze, settings } = await getState();
+      const updates = {};
+      if (msg.session) updates.session = { ...session, ...msg.session };
+      if (msg.snooze) updates.snooze = { ...snooze, ...msg.snooze };
+      if (msg.settings) updates.settings = { ...settings, ...msg.settings };
+      await chrome.storage.local.set(updates);
+      await updateBadge();
+      if (updates.session) notifyContentScripts({ type: "session-updated", session: updates.session });
+      if (updates.snooze) notifyContentScripts({ type: "snooze-changed", snooze: updates.snooze });
+      sendResponse({ ok: true });
+    })();
+    return true;
+  }
+  // Debug console: re-render badge + content after a direct storage write.
+  if (msg.type === "debug-refresh") {
+    (async () => {
+      const { session, snooze } = await getState();
+      await updateBadge();
+      notifyContentScripts({ type: "session-updated", session });
+      notifyContentScripts({ type: "snooze-changed", snooze });
       sendResponse({ ok: true });
     })();
     return true;

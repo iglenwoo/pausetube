@@ -132,6 +132,23 @@
     .session-cancel.hidden {
       display: none;
     }
+
+    .debug-link {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      padding: 6px;
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 11px;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+
+    .debug-link:hover {
+      color: #a5b4fc;
+    }
   </style>
 </head>
 <body>
@@ -155,6 +172,8 @@
   </div>
 
   <button class="session-cancel hidden" id="session-cancel">Cancel session</button>
+
+  <button class="debug-link" id="debug-link">🐞 Debug</button>
 
   <script src="popup.js"></script>
 </body>
