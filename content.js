@@ -45,7 +45,7 @@
     // set-intent restarts the clock once they answer.
     if (document.querySelector(".offtube-intent-overlay")) return "none";
     const settings = currentState.settings || {};
-    const highRiskMs = settings.highRiskMs ?? 2 * 60 * 1000;
+    const highRiskMs = settings.highRiskMs ?? 3 * 60 * 1000;
     const elapsed = getElapsedMs(currentState.session);
     if (elapsed >= highRiskMs) return "high";
     return "none";

@@ -5,7 +5,7 @@ const DEFAULT_SETTINGS = {
   sessionTimeoutMin: 30,
   defaultSnoozeMin: 15,
   defaultSnoozeVideos: 5,
-  highRiskMs: 2 * 60 * 1000, // elapsed time that flips risk to "high"
+  highRiskMs: 3 * 60 * 1000, // elapsed time that flips risk to "high"
   highRiskShortStreak: 3, // consecutive Shorts that flips risk to "high"
 };
 

@@ -57,7 +57,7 @@ function computeRisk(state) {
   const { session, snooze, settings } = state;
   if (!session.startTime) return { level: "none", reason: "no session" };
   if (snooze.active) return { level: "snoozed", reason: "snooze active" };
-  const highRiskMs = settings.highRiskMs ?? 120000;
+  const highRiskMs = settings.highRiskMs ?? 180000;
   const streakLimit = settings.highRiskShortStreak ?? 3;
   const elapsed = getElapsedMs(session);
   const streak = session.shortStreak || 0;
@@ -95,7 +95,7 @@ function render(snap) {
   const now = Date.now();
   const risk = computeRisk(snap);
   const elapsed = getElapsedMs(session);
-  const highRiskMs = settings.highRiskMs ?? 120000;
+  const highRiskMs = settings.highRiskMs ?? 180000;
   const streakLimit = settings.highRiskShortStreak ?? 3;
 
   const toHigh = (!session.startTime || snooze.active || risk.level === "high")
@@ -191,7 +191,7 @@ async function handleAct(act, el) {
         if (last.snooze.active) await send({ type: "end-snooze" });
         await send({ type: "debug-apply", session: {
           startTime: s.startTime || now, timerStartedAt: now,
-          elapsedMs: last.settings.highRiskMs ?? 120000, lastActivity: now,
+          elapsedMs: last.settings.highRiskMs ?? 180000, lastActivity: now,
         } });
         break;
       case "add":
