@@ -32,14 +32,22 @@ const EMPTY_SNOOZE = {
 // --- Initialization ---
 
 chrome.runtime.onInstalled.addListener(async () => {
-  const { settings } = await chrome.storage.local.get("settings");
-  if (!settings) {
-    await chrome.storage.local.set({
-      settings: DEFAULT_SETTINGS,
-      session: EMPTY_SESSION,
-      snooze: EMPTY_SNOOZE,
-    });
-  }
+  const { settings, session, snooze } = await chrome.storage.local.get([
+    "settings",
+    "session",
+    "snooze",
+  ]);
+  // Reconcile settings with the code defaults on every install AND update, so a
+  // changed default (e.g. raising highRiskMs to 3 min) actually takes effect
+  // instead of being shadowed forever by the value written on first install.
+  // DEFAULT_SETTINGS wins for the keys it defines; any stored key it doesn't
+  // define is preserved. session/snooze are only seeded when absent, so a live
+  // session survives an extension reload.
+  await chrome.storage.local.set({
+    settings: { ...settings, ...DEFAULT_SETTINGS },
+    session: session || EMPTY_SESSION,
+    snooze: snooze || EMPTY_SNOOZE,
+  });
 });
 
 // --- Session Management ---
