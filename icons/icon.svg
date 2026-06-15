@@ -1,10 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Outer ring with a gap at lower-right -->
-  <circle cx="64" cy="64" r="50" fill="none" stroke="#6366f1" stroke-width="9"
-          stroke-linecap="round" stroke-dasharray="262 52"
-          transform="rotate(150 64 64)"/>
+  <!-- Speech bubble: OffTube asks before you watch -->
+  <rect x="2" y="6" width="124" height="84" rx="22" fill="#6366f1"/>
+  <path d="M44 88 L44 122 L80 88 Z" fill="#6366f1"/>
 
-  <!-- Inner play disc -->
-  <circle cx="64" cy="64" r="30" fill="#6366f1"/>
-  <polygon points="57,49 57,79 82,64" fill="white"/>
+  <!-- Pause bars: the prompt that adds friction, not a play button -->
+  <rect x="42" y="25" width="16" height="46" rx="7" fill="#ffffff"/>
+  <rect x="70" y="25" width="16" height="46" rx="7" fill="#ffffff"/>
 </svg>
