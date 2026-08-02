@@ -93,8 +93,16 @@ document.getElementById("settings-link").addEventListener("click", () => {
   chrome.runtime.openOptionsPage();
 });
 
-document.getElementById("debug-link").addEventListener("click", () => {
+const debugLink = document.getElementById("debug-link");
+debugLink.addEventListener("click", () => {
   chrome.tabs.create({ url: chrome.runtime.getURL("debug.html") });
+});
+
+// Debug console is a dev-only tool: show its link only when the extension is
+// loaded unpacked. Store installs report installType "normal" and never see it.
+// getSelf() needs no "management" permission (unlike the rest of that API).
+chrome.management.getSelf((self) => {
+  if (self.installType !== "development") debugLink.style.display = "none";
 });
 
 sessionCancelBtn.addEventListener("click", async () => {
