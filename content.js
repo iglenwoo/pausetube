@@ -4,6 +4,8 @@
 (function () {
   "use strict";
 
+  const CONFIG = self.OffTubeConfig;
+
   let currentState = null;
   let badgeEl = null;
   let stickyEl = null;
@@ -27,6 +29,12 @@
     return currentState?.snooze?.active === true;
   }
 
+  // Effective settings always carry every key (background fills defaults), but
+  // fall back to the shared defaults for the brief window before first fetch.
+  function getSettings() {
+    return { ...CONFIG.DEFAULT_SETTINGS, ...(currentState?.settings || {}) };
+  }
+
   function getElapsedMs(session) {
     const base = session.elapsedMs || 0;
     if (!session.timerStartedAt) return base;
@@ -44,8 +52,7 @@
     // While the intent prompt is still on screen, don't count risk time —
     // set-intent restarts the clock once they answer.
     if (document.querySelector(".offtube-intent-overlay")) return "none";
-    const settings = currentState.settings || {};
-    const highRiskMs = settings.highRiskMs ?? 3 * 60 * 1000;
+    const highRiskMs = getSettings().highRiskMs;
     const elapsed = getElapsedMs(currentState.session);
     if (elapsed >= highRiskMs) return "high";
     return "none";
@@ -66,8 +73,15 @@
     const steps = banner.querySelectorAll(".offtube-breathe-step");
     const countLabel = banner.querySelector(".offtube-breathe-count");
 
-    const INHALE_S = 4;
-    const EXHALE_S = 4;
+    const settings = getSettings();
+    const INHALE_S = settings.breatheInhaleSec;
+    const EXHALE_S = settings.breatheExhaleSec;
+    // The circle's grow/shrink transition is 4s in CSS; override it so the
+    // animation tracks the configured inhale/exhale lengths.
+    function setCircleDuration(sec) {
+      circle.style.transition =
+        `transform ${sec}s ease-in-out, opacity ${sec}s ease-in-out, background-color ${sec}s ease-in-out`;
+    }
     const PHASES = ["ready", "inhale", "hold", "exhale"];
 
     function translateToStep(stepEl) {
@@ -99,6 +113,7 @@
       // t=1s: inhale
       setActivePhase("inhale");
       countLabel.textContent = INHALE_S;
+      setCircleDuration(INHALE_S);
       requestAnimationFrame(() => circle.classList.add("inhaling"));
 
       let inhaleElapsed = 0;
@@ -116,6 +131,7 @@
             // t=6s: exhale
             setActivePhase("exhale");
             countLabel.textContent = EXHALE_S;
+            setCircleDuration(EXHALE_S);
             circle.classList.remove("inhaling");
 
             let exhaleElapsed = 0;
@@ -162,10 +178,8 @@
     const elapsed = getElapsedMs(session);
     const min = Math.floor(elapsed / 60000);
     const videos = session.videoCount || 0;
-    const shortStreak = session.shortStreak || 0;
-    const stateText = shortStreak >= 3
-      ? `${shortStreak} Shorts in a row`
-      : `${min} min here · ${videos} video${videos !== 1 ? "s" : ""}`;
+    const stateText = `${min} min here · ${videos} video${videos !== 1 ? "s" : ""}`;
+    const snoozeOptions = getSettings().gateSnoozeOptions;
 
     const banner = document.createElement("div");
     banner.className = "offtube-feed-banner";
@@ -191,14 +205,20 @@
       <div class="offtube-phase-snooze">
         <p class="offtube-snooze-state">${stateText}</p>
         <button class="offtube-choice-done">I'm done</button>
-        <button class="offtube-choice-snooze" data-minutes="1">1 more min</button>
-        <button class="offtube-choice-snooze" data-minutes="3">3 more min</button>
         <button class="offtube-choice-cancel">Cancel session</button>
       </div>
     `;
 
-    banner.querySelectorAll("[data-minutes]").forEach((btn) => {
-      btn.addEventListener("click", () => handleSnoozeClick(Number(btn.dataset.minutes), null));
+    // Snooze ("more min") buttons are configurable — build them from settings and
+    // insert them between "I'm done" and "Cancel session".
+    const snoozePhase = banner.querySelector(".offtube-phase-snooze");
+    const cancelBtn = snoozePhase.querySelector(".offtube-choice-cancel");
+    snoozeOptions.forEach((minutes) => {
+      const btn = document.createElement("button");
+      btn.className = "offtube-choice-snooze";
+      btn.textContent = `${minutes} more min`;
+      btn.addEventListener("click", () => handleSnoozeClick(minutes, null));
+      snoozePhase.insertBefore(btn, cancelBtn);
     });
 
     banner.querySelector(".offtube-choice-done")?.addEventListener("click", () => {
@@ -263,9 +283,11 @@
 
   function shouldShowIntent() {
     if (!currentState) return false;
+    const settings = getSettings();
+    if (!settings.intentPromptEnabled) return false;
     if (isSnoozed()) return false;
     if (currentState.session.intent) return false;
-    if (isDirectVideoLink()) return false;
+    if (!settings.promptOnDirectLinks && isDirectVideoLink()) return false;
     return true;
   }
 
@@ -505,7 +527,13 @@
     if (!currentState) currentState = { session: {}, snooze: {}, settings: {} };
 
     if (changes.settings) {
-      currentState.settings = changes.settings.newValue || {};
+      // Stored settings are sparse overrides — expand to the full effective set
+      // so getSettings()/getRiskLevel() see every key. Re-apply immediately so a
+      // changed threshold (e.g. a shorter gate time) takes effect without waiting
+      // for the next interval tick.
+      currentState.settings = CONFIG.effectiveSettings(changes.settings.newValue);
+      applyRiskUI();
+      updateBadge();
     }
 
     if (changes.snooze) {

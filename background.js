@@ -1,13 +1,8 @@
 // OffTube — Background Service Worker
 // Manages session state, timers, snooze logic, and badge updates
 
-const DEFAULT_SETTINGS = {
-  sessionTimeoutMin: 30,
-  defaultSnoozeMin: 15,
-  defaultSnoozeVideos: 5,
-  highRiskMs: 3 * 60 * 1000, // elapsed time that flips risk to "high"
-  highRiskShortStreak: 3, // consecutive Shorts that flips risk to "high"
-};
+importScripts("config.js");
+const { effectiveSettings, toSparse } = self.OffTubeConfig;
 
 const EMPTY_SESSION = {
   startTime: null,
@@ -19,7 +14,6 @@ const EMPTY_SESSION = {
   lastActivity: null,
   snoozeCount: 0,
   totalSnoozedMs: 0,
-  shortStreak: 0,
 };
 
 const EMPTY_SNOOZE = {
@@ -37,14 +31,14 @@ chrome.runtime.onInstalled.addListener(async () => {
     "session",
     "snooze",
   ]);
-  // Reconcile settings with the code defaults on every install AND update, so a
-  // changed default (e.g. raising highRiskMs to 3 min) actually takes effect
-  // instead of being shadowed forever by the value written on first install.
-  // DEFAULT_SETTINGS wins for the keys it defines; any stored key it doesn't
-  // define is preserved. session/snooze are only seeded when absent, so a live
-  // session survives an extension reload.
+  // Settings are stored as *sparse overrides* — only keys the user changed.
+  // toSparse(effectiveSettings(...)) clamps whatever is stored and drops any key
+  // that equals the current default, so (a) old full settings objects migrate to
+  // sparse form, and (b) a changed default automatically reaches anyone who
+  // hasn't overridden that key. session/snooze are only seeded when absent, so a
+  // live session survives an extension reload.
   await chrome.storage.local.set({
-    settings: { ...settings, ...DEFAULT_SETTINGS },
+    settings: toSparse(effectiveSettings(settings)),
     session: session || EMPTY_SESSION,
     snooze: snooze || EMPTY_SNOOZE,
   });
@@ -57,7 +51,7 @@ async function getState() {
   return {
     session: { ...EMPTY_SESSION, ...(data.session || {}) },
     snooze: { ...EMPTY_SNOOZE, ...(data.snooze || {}) },
-    settings: { ...DEFAULT_SETTINGS, ...(data.settings || {}) },
+    settings: effectiveSettings(data.settings),
   };
 }
 
@@ -138,6 +132,17 @@ async function hasOpenYouTubeTabs() {
   return tabs.length > 0;
 }
 
+// --- Settings ---
+
+// Merge a partial settings patch into the stored overrides, clamp the result to
+// the schema, and persist it sparsely (only keys that differ from the default).
+// Content scripts re-render off the storage write via chrome.storage.onChanged.
+async function patchSettings(patch) {
+  const { settings } = await chrome.storage.local.get("settings");
+  const merged = effectiveSettings({ ...(settings || {}), ...(patch || {}) });
+  await chrome.storage.local.set({ settings: toSparse(merged) });
+}
+
 async function pausePersistedTimerAtLastActivity() {
   const { session } = await getState();
   if (!session.timerStartedAt) return session;
@@ -167,14 +172,13 @@ async function syncTimerWithYouTubeTabs() {
 
 // --- Video Tracking ---
 
-async function trackVideo(videoId, isShorts = false) {
+async function trackVideo(videoId) {
   const { session } = await getState();
   if (!videoId || session.videosWatched.includes(videoId)) return;
 
   session.videosWatched.push(videoId);
   session.videoCount = session.videosWatched.length;
   session.lastActivity = Date.now();
-  session.shortStreak = isShorts ? (session.shortStreak || 0) + 1 : 0;
   await chrome.storage.local.set({ session });
 
   await checkSnoozeVideoLimit();
@@ -312,23 +316,21 @@ chrome.runtime.onStartup.addListener(async () => {
 
 // --- Navigation Tracking ---
 
-function extractVideoInfo(url) {
-  if (url.pathname === "/watch") return { videoId: url.searchParams.get("v"), isShorts: false };
+function extractVideoId(url) {
+  if (url.pathname === "/watch") return url.searchParams.get("v");
   if (url.pathname.startsWith("/shorts/")) {
-    const videoId = url.pathname.split("/shorts/")[1]?.split("?")[0] || null;
-    return { videoId, isShorts: true };
+    return url.pathname.split("/shorts/")[1]?.split("?")[0] || null;
   }
-  return { videoId: null, isShorts: false };
+  return null;
 }
 
 chrome.webNavigation.onHistoryStateUpdated.addListener(
   async (details) => {
     if (details.frameId !== 0) return;
-    const url = new URL(details.url);
-    const { videoId, isShorts } = extractVideoInfo(url);
+    const videoId = extractVideoId(new URL(details.url));
     if (videoId) {
       await ensureSession();
-      await trackVideo(videoId, isShorts);
+      await trackVideo(videoId);
     }
   },
   { url: [{ hostContains: "youtube.com" }] }
@@ -338,11 +340,10 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(
 chrome.webNavigation.onCompleted.addListener(
   async (details) => {
     if (details.frameId !== 0) return;
-    const url = new URL(details.url);
-    const { videoId, isShorts } = extractVideoInfo(url);
+    const videoId = extractVideoId(new URL(details.url));
     if (videoId) {
       await ensureSession();
-      await trackVideo(videoId, isShorts);
+      await trackVideo(videoId);
     }
   },
   { url: [{ hostContains: "youtube.com" }] }
@@ -375,6 +376,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg.type === "end-snooze") {
     endSnooze().then(() => sendResponse({ ok: true }));
+    return true;
+  }
+  if (msg.type === "set-settings") {
+    patchSettings(msg.settings)
+      .then(() => updateBadge())
+      .then(() => sendResponse({ ok: true }));
     return true;
   }
   if (msg.type === "heartbeat") {
@@ -429,12 +436,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // scripts re-render off the storage write via chrome.storage.onChanged.
   if (msg.type === "debug-apply") {
     (async () => {
-      const { session, snooze, settings } = await getState();
+      const { session, snooze } = await getState();
       const updates = {};
       if (msg.session) updates.session = { ...session, ...msg.session };
       if (msg.snooze) updates.snooze = { ...snooze, ...msg.snooze };
-      if (msg.settings) updates.settings = { ...settings, ...msg.settings };
-      await chrome.storage.local.set(updates);
+      if (Object.keys(updates).length) await chrome.storage.local.set(updates);
+      // Settings route through patchSettings so they get clamped and stored
+      // sparsely, same as the Options page.
+      if (msg.settings) await patchSettings(msg.settings);
       await updateBadge();
       sendResponse({ ok: true });
     })();

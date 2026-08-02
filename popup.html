@@ -133,10 +133,15 @@
       display: none;
     }
 
-    .debug-link {
-      display: block;
-      width: 100%;
+    .footer {
+      display: flex;
+      gap: 8px;
       margin-top: 12px;
+    }
+
+    .debug-link {
+      flex: 1;
+      display: block;
       padding: 6px;
       background: none;
       border: none;
@@ -161,9 +166,6 @@
 
   <div class="snooze-row" id="snooze-controls">
     <span class="snooze-label">Snooze</span>
-    <button class="snooze-btn" data-minutes="1">1m</button>
-    <button class="snooze-btn" data-minutes="5">5m</button>
-    <button class="snooze-btn" data-minutes="10">10m</button>
   </div>
 
   <div class="snooze-active" id="snooze-active" style="display: none">
@@ -173,7 +175,10 @@
 
   <button class="session-cancel hidden" id="session-cancel">Cancel session</button>
 
-  <button class="debug-link" id="debug-link">🐞 Debug</button>
+  <div class="footer">
+    <button class="debug-link" id="settings-link">⚙ Settings</button>
+    <button class="debug-link" id="debug-link">🐞 Debug</button>
+  </div>
 
   <script src="popup.js"></script>
 </body>

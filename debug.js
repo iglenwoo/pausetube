@@ -58,12 +58,9 @@ function computeRisk(state) {
   if (!session.startTime) return { level: "none", reason: "no session" };
   if (snooze.active) return { level: "snoozed", reason: "snooze active" };
   const highRiskMs = settings.highRiskMs ?? 180000;
-  const streakLimit = settings.highRiskShortStreak ?? 3;
   const elapsed = getElapsedMs(session);
-  const streak = session.shortStreak || 0;
   if (elapsed >= highRiskMs) return { level: "high", reason: `elapsed ${fmtClock(elapsed)} ≥ ${fmtClock(highRiskMs)}` };
-  if (streak >= streakLimit) return { level: "high", reason: `shortStreak ${streak} ≥ ${streakLimit}` };
-  return { level: "none", reason: "below thresholds" };
+  return { level: "none", reason: "below threshold" };
 }
 
 // --- Rendering ---
@@ -96,12 +93,10 @@ function render(snap) {
   const risk = computeRisk(snap);
   const elapsed = getElapsedMs(session);
   const highRiskMs = settings.highRiskMs ?? 180000;
-  const streakLimit = settings.highRiskShortStreak ?? 3;
 
   const toHigh = (!session.startTime || snooze.active || risk.level === "high")
     ? "—"
     : fmtClock(Math.max(0, highRiskMs - elapsed));
-  const shortsToHigh = Math.max(0, streakLimit - (session.shortStreak || 0));
   const snoozeRem = snooze.active && snooze.expiresAt ? fmtClock(Math.max(0, snooze.expiresAt - now)) : "—";
   const vidsLeft = snooze.active && snooze.videoLimit
     ? Math.max(0, snooze.videoLimit - ((session.videoCount || 0) - (snooze.videosAtSnoozeStart || 0)))
@@ -116,7 +111,6 @@ function render(snap) {
   $("derived").innerHTML = rows([
     ["risk", `<b>${risk.level.toUpperCase()}</b> <span class="dim">(${esc(risk.reason)})</span>`, "risk-" + risk.level],
     ["time to high risk", toHigh],
-    ["shorts to high", `${shortsToHigh} of ${streakLimit}`],
     ["snooze remaining", snoozeRem],
     ["videos left in snooze", vidsLeft],
     ["session timeout in", timeoutIn],
@@ -135,7 +129,6 @@ function render(snap) {
     ["videosWatched", watched.length ? `${watched.length}: <span class="dim">${esc(watched.join(", "))}</span>` : "0"],
     ["intent", session.intent != null ? `"${esc(session.intent)}"` : "—"],
     ["lastActivity", session.lastActivity ? `${fmtTime(session.lastActivity)} <span class="dim">(${fmtAgo(session.lastActivity)})</span>` : "—"],
-    ["shortStreak", session.shortStreak || 0],
     ["snoozeCount", session.snoozeCount || 0],
     ["totalSnoozed", fmtClock(session.totalSnoozedMs || 0)],
   ]);
@@ -214,9 +207,6 @@ async function handleAct(act, el) {
       case "add-video":
         await send({ type: "debug-apply", session: { videoCount: (s.videoCount || 0) + 1, lastActivity: now } });
         break;
-      case "set-streak":
-        await send({ type: "debug-apply", session: { shortStreak: Number($("set-streak").value) } });
-        break;
       case "snooze":
         await send({ type: "start-snooze", minutes: Number(el.dataset.min), videoLimit: null });
         break;
@@ -234,9 +224,6 @@ async function handleAct(act, el) {
         break;
       case "set-highrisk":
         await send({ type: "debug-apply", settings: { highRiskMs: Number($("set-highrisk").value) * 1000 } });
-        break;
-      case "set-streak-thresh":
-        await send({ type: "debug-apply", settings: { highRiskShortStreak: Number($("set-streak-thresh").value) } });
         break;
       case "set-timeout":
         await send({ type: "debug-apply", settings: { sessionTimeoutMin: Number($("set-timeout").value) } });

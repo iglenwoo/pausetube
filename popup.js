@@ -18,9 +18,30 @@ async function loadState() {
   }
 }
 
+// Snooze durations are configurable — rebuild the buttons whenever the set
+// changes (cheap; the popup re-renders once a second).
+let snoozeSig = null;
+function buildSnoozeButtons(options) {
+  const sig = options.join(",");
+  if (sig === snoozeSig) return;
+  snoozeSig = sig;
+  snoozeControls.querySelectorAll(".snooze-btn").forEach((b) => b.remove());
+  options.forEach((min) => {
+    const btn = document.createElement("button");
+    btn.className = "snooze-btn";
+    btn.textContent = `${min}m`;
+    btn.addEventListener("click", async () => {
+      await chrome.runtime.sendMessage({ type: "start-snooze", minutes: min, videoLimit: null });
+      await loadState();
+    });
+    snoozeControls.appendChild(btn);
+  });
+}
+
 function render(state) {
   const session = state.session || {};
   const snooze = state.snooze || { active: false };
+  buildSnoozeButtons(state.settings?.popupSnoozeOptions || [1, 5, 10]);
 
   // Stats
   let timeText = "—";
@@ -63,20 +84,13 @@ function render(state) {
   }
 }
 
-document.querySelectorAll(".snooze-btn").forEach((btn) => {
-  btn.addEventListener("click", async () => {
-    await chrome.runtime.sendMessage({
-      type: "start-snooze",
-      minutes: Number(btn.dataset.minutes),
-      videoLimit: null,
-    });
-    await loadState();
-  });
-});
-
 snoozeCancelBtn.addEventListener("click", async () => {
   await chrome.runtime.sendMessage({ type: "end-snooze" });
   await loadState();
+});
+
+document.getElementById("settings-link").addEventListener("click", () => {
+  chrome.runtime.openOptionsPage();
 });
 
 document.getElementById("debug-link").addEventListener("click", () => {
