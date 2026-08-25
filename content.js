@@ -13,6 +13,8 @@
   let toastMidpointTimer = null;
   let lastKnownSessionStart = null;
   let lastDisplayedMinute = null;
+  let releaseGateFocus = null;
+  let releaseIntentFocus = null;
 
   // --- State ---
 
@@ -56,6 +58,148 @@
     const elapsed = getElapsedMs(currentState.session);
     if (elapsed >= highRiskMs) return "high";
     return "none";
+  }
+
+  // --- Modal Plumbing ---
+
+  // Both overlays are modal, and the gate can in principle mount while the
+  // intent prompt is still up, so the lock is reference-counted by owner —
+  // whoever unmounts last releases it.
+  const scrollLockOwners = new Set();
+  let lockedScrollY = 0;
+
+  function lockScroll(owner) {
+    if (scrollLockOwners.has(owner)) return;
+    if (scrollLockOwners.size === 0) {
+      lockedScrollY = window.scrollY;
+      document.documentElement.classList.add("offtube-scroll-lock");
+    }
+    scrollLockOwners.add(owner);
+  }
+
+  function unlockScroll(owner) {
+    if (!scrollLockOwners.delete(owner)) return;
+    if (scrollLockOwners.size > 0) return;
+    document.documentElement.classList.remove("offtube-scroll-lock");
+    // No-op where the browser kept the offset; insurance where it didn't.
+    window.scrollTo(0, lockedScrollY);
+  }
+
+  // The gate pauses playback for as long as it's on screen, not just once at
+  // mount — otherwise YouTube's autoplay (or a click that lands before the
+  // overlay does) restarts the video behind it.
+  let pauseGuard = null;
+
+  function startPauseEnforcement() {
+    if (!pauseGuard) {
+      pauseGuard = (e) => {
+        if (e.target instanceof HTMLMediaElement) e.target.pause();
+      };
+      // `play` doesn't bubble, so listen in the capture phase: that catches
+      // every media element, including ones YouTube swaps in mid-gate.
+      document.addEventListener("play", pauseGuard, true);
+    }
+    document.querySelectorAll("video").forEach((v) => v.pause());
+  }
+
+  function stopPauseEnforcement() {
+    if (!pauseGuard) return;
+    document.removeEventListener("play", pauseGuard, true);
+    pauseGuard = null;
+  }
+
+  // --- Dialog Focus / Keyboard ---
+
+  const FOCUSABLE_SELECTOR =
+    'button:not([disabled]), input:not([disabled]), select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
+
+  // Rendered focusables only — the gate keeps its snooze buttons in the DOM,
+  // display:none, for the whole breathing phase.
+  function focusableIn(root) {
+    return Array.from(root.querySelectorAll(FOCUSABLE_SELECTOR))
+      .filter((el) => el.getClientRects().length > 0);
+  }
+
+  // Only the topmost dialog reacts to keys, so overlapping traps can't fight
+  // each other over focus.
+  const trapStack = [];
+
+  // Keyboard contract shared by both dialogs:
+  //   Tab / Shift+Tab, ArrowDown / ArrowUp   cycle the controls, never leaving
+  //   Enter / Space                          activate the focused control
+  //   anything else                          is swallowed
+  // The listener sits on document in the capture phase because YouTube binds
+  // its own shortcuts (space, j/k/l, /, arrows) at the document level too:
+  // capture runs first, and stopping propagation there is what keeps the page
+  // inert behind a modal. The flip side is that listeners inside the dialog
+  // never see the event, so Enter on a non-button (the intent input) is routed
+  // through opts.onEnter. Default actions — typing, a button's Enter/Space
+  // click — are untouched by stopPropagation, so they still work.
+  // Returns a teardown that also restores focus to wherever it came from.
+  function trapFocus(container, opts = {}) {
+    const restoreTo = document.activeElement;
+    const token = {};
+
+    function move(delta) {
+      const items = focusableIn(container);
+      if (!items.length) return;
+      const at = items.indexOf(document.activeElement);
+      const next = at === -1
+        ? (delta > 0 ? 0 : items.length - 1)
+        : (at + delta + items.length) % items.length;
+      items[next].focus();
+    }
+
+    function isTop() {
+      return trapStack[trapStack.length - 1] === token;
+    }
+
+    function onKeyDown(e) {
+      if (!isTop()) return;
+
+      if (!container.contains(e.target)) {
+        // Focus escaped (or never landed) — swallow the key and pull it back.
+        e.preventDefault();
+        e.stopPropagation();
+        focusableIn(container)[0]?.focus();
+        return;
+      }
+      e.stopPropagation();
+
+      if (e.key === "Tab") {
+        e.preventDefault();
+        move(e.shiftKey ? -1 : 1);
+      } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        // Text fields keep the arrows for caret movement.
+        if (e.target.matches("input, textarea")) return;
+        e.preventDefault();
+        move(e.key === "ArrowDown" ? 1 : -1);
+      } else if (e.key === "Enter" && !e.target.matches("button, a[href]")) {
+        // Buttons activate themselves; anything else defers to the dialog.
+        opts.onEnter?.(e);
+      }
+    }
+
+    // keypress/keyup carry YouTube shortcuts of their own, and nothing in the
+    // dialogs listens for them.
+    const swallow = (e) => { if (isTop()) e.stopPropagation(); };
+
+    trapStack.push(token);
+    document.addEventListener("keydown", onKeyDown, true);
+    document.addEventListener("keyup", swallow, true);
+    document.addEventListener("keypress", swallow, true);
+
+    return function release() {
+      const at = trapStack.indexOf(token);
+      if (at !== -1) trapStack.splice(at, 1);
+      document.removeEventListener("keydown", onKeyDown, true);
+      document.removeEventListener("keyup", swallow, true);
+      document.removeEventListener("keypress", swallow, true);
+      // Hand focus back only if the dialog still holds it.
+      if (container.contains(document.activeElement) && restoreTo?.isConnected) {
+        restoreTo.focus?.();
+      }
+    };
   }
 
   // --- Feed Hidden Banner ---
@@ -167,7 +311,12 @@
     setTimeout(() => {
       breatheEl.style.display = "none";
       snoozeEl.style.display = "flex";
-      requestAnimationFrame(() => snoozeEl.classList.add("visible"));
+      requestAnimationFrame(() => {
+        snoozeEl.classList.add("visible");
+        // Nothing was focusable during the breathing phase; land on "I'm done"
+        // so Enter picks the restful option.
+        focusableIn(snoozeEl)[0]?.focus();
+      });
     }, 300);
   }
 
@@ -183,6 +332,9 @@
 
     const banner = document.createElement("div");
     banner.className = "offtube-feed-banner";
+    banner.setAttribute("role", "dialog");
+    banner.setAttribute("aria-modal", "true");
+    banner.setAttribute("aria-label", "OffTube session check");
     banner.innerHTML = `
       <div class="offtube-phase-breathe">
         <div class="offtube-breathe-title">Deep Breath</div>
@@ -234,11 +386,16 @@
     });
 
     document.body.appendChild(banner);
+    lockScroll("gate");
+    releaseGateFocus = trapFocus(banner);
     runBreathing(banner, () => showSnoozePhase(banner));
   }
 
   function removeFeedHiddenBanner() {
+    releaseGateFocus?.();
+    releaseGateFocus = null;
     document.querySelector(".offtube-feed-banner")?.remove();
+    unlockScroll("gate");
   }
 
   // --- Risk UI ---
@@ -253,13 +410,14 @@
 
     if (risk === "snoozed" || risk === "none") {
       document.documentElement.classList.remove("offtube-blur");
+      stopPauseEnforcement();
       removeFeedHiddenBanner();
       return;
     }
 
     // high
     document.documentElement.classList.add("offtube-blur");
-    document.querySelectorAll("video").forEach((v) => v.pause());
+    startPauseEnforcement();
     showFeedHiddenBanner();
   }
 
@@ -296,9 +454,12 @@
 
     const overlay = document.createElement("div");
     overlay.className = "offtube-intent-overlay";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "offtube-intent-title");
     overlay.innerHTML = `
       <div class="offtube-intent-card">
-        <h1>What are you here to watch?</h1>
+        <h1 id="offtube-intent-title">What are you here to watch?</h1>
         <p>Having a purpose helps you stay in control.</p>
         <input class="offtube-intent-input" type="text" placeholder="e.g. Next.js tutorial, music for studying..." autofocus />
         <br />
@@ -315,23 +476,33 @@
     async function submit() {
       const intent = input.value.trim() || "Just browsing";
       await chrome.runtime.sendMessage({ type: "set-intent", intent });
-      overlay.remove();
+      removeIntentPrompt();
       await fetchState();
       showIntentSticky();
     }
 
     submitBtn.addEventListener("click", submit);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") submit();
-    });
     skipBtn.addEventListener("click", async () => {
       await chrome.runtime.sendMessage({ type: "set-intent", intent: "Just browsing" });
-      overlay.remove();
+      removeIntentPrompt();
       await fetchState();
     });
 
     document.body.appendChild(overlay);
+    lockScroll("intent");
+    // Enter from the input reaches submit() through the trap — the capture-phase
+    // listener stops the keydown before any listener on the input could run.
+    releaseIntentFocus = trapFocus(overlay, { onEnter: submit });
     requestAnimationFrame(() => input.focus());
+  }
+
+  // Always tear the prompt down through here — the overlay owns a scroll lock
+  // and a focus trap that a bare .remove() would strand.
+  function removeIntentPrompt() {
+    releaseIntentFocus?.();
+    releaseIntentFocus = null;
+    document.querySelector(".offtube-intent-overlay")?.remove();
+    unlockScroll("intent");
   }
 
   function showIntentSticky() {
@@ -573,7 +744,7 @@
         } else {
           // Intent committed (here or in another tab) — drop any lingering
           // prompt and mirror the chosen goal.
-          document.querySelector(".offtube-intent-overlay")?.remove();
+          removeIntentPrompt();
           if (newIntent === "Just browsing") removeIntentSticky();
           else showIntentSticky();
         }

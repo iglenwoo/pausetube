@@ -6,7 +6,7 @@ ADHD-friendly YouTube nudges. Don't block — add friction to the dopamine loop.
 
 - **Intent prompt** on first visit: *"What are you here to watch?"*
 - **Time-gate overlay** after 3 min of browsing: pauses the video, runs a ~10s breathing beat, then asks what you want to do — done, more minutes, or cancel the session.
-- **Session timer** with minute pulses, floating badge, and a matching countdown on the extension icon.
+- **Session timer** with minute pulses, a floating badge, and a matching elapsed-minute count on the extension icon.
 - **Snooze, no off switch.** Suppress nudges for 1/5/10 min from the popup, or 1/3 min from the overlay. No disable toggle.
 
 ## Settings
@@ -18,7 +18,7 @@ Tune the friction — but never turn it off — from the **⚙ Settings** link i
 - **Snooze button** options for the popup and the gate
 - **Intent prompt** on/off, and whether to also prompt on links opened from outside YouTube
 
-Settings live in `chrome.storage.local` as sparse overrides — only what you change is stored, so unchanged knobs keep tracking the defaults across updates. The schema in [`config.js`](./config.js) is the single source of truth that drives the defaults, the options form, and validation. The 🐞 Debug console exposes the raw state for development.
+Settings are sparse overrides on the schema in [`config.js`](./config.js) — the single source of truth that drives the defaults, the options form, and validation. Only changed knobs are stored, so the rest keep tracking the defaults across updates.
 
 ## Install (dev)
 

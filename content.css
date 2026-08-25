@@ -12,14 +12,23 @@
   visibility: hidden !important;
 }
 
-/* Full-page dim overlay — sits behind the banner (z-index 9998 < 9999) */
+/* Full-page dim overlay — sits behind the banner (z-index 9998 < 9999).
+   Eats clicks: the gate is modal, so nothing behind it stays reachable. The
+   banner's own buttons sit above this layer and still work. */
 .offtube-blur body::before {
   content: '';
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.95);
   z-index: 9998;
-  pointer-events: none;
+  pointer-events: auto;
+}
+
+/* Scroll lock, shared by the gate and the intent prompt. Applied to <html> by
+   lockScroll(); content.js stashes and restores scrollY around it. */
+html.offtube-scroll-lock,
+html.offtube-scroll-lock body {
+  overflow: hidden !important;
 }
 
 /* Search results */
@@ -190,7 +199,8 @@
   letter-spacing: -0.01em;
 }
 
-.offtube-choice-done:hover {
+.offtube-choice-done:hover,
+.offtube-choice-done:focus {
   background: #ffffff;
 }
 
@@ -206,7 +216,8 @@
   transition: border-color 0.15s, color 0.15s;
 }
 
-.offtube-choice-snooze:hover {
+.offtube-choice-snooze:hover,
+.offtube-choice-snooze:focus {
   border-color: #4a4a5e;
   color: #aaa;
 }
@@ -225,8 +236,18 @@
   white-space: nowrap;
 }
 
-.offtube-choice-cancel:hover {
+.offtube-choice-cancel:hover,
+.offtube-choice-cancel:focus {
   color: #a5b4fc;
+}
+
+/* Keyboard focus ring. Plain :focus, not :focus-visible — the gate moves focus
+   programmatically when the snooze phase appears, which :focus-visible would
+   only style if the last input happened to be a key press. */
+.offtube-feed-banner button:focus,
+.offtube-intent-card button:focus {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 3px;
 }
 
 /* --- Minute Pulse (every 1m tick) --- */
@@ -373,7 +394,8 @@
   transition: background 0.2s;
 }
 
-.offtube-intent-submit:hover {
+.offtube-intent-submit:hover,
+.offtube-intent-submit:focus {
   background: #4f46e5;
 }
 
@@ -387,7 +409,8 @@
   cursor: pointer;
 }
 
-.offtube-intent-skip:hover {
+.offtube-intent-skip:hover,
+.offtube-intent-skip:focus {
   color: #999;
 }
 
