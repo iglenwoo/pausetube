@@ -282,8 +282,8 @@ async function updateBadge() {
   chrome.action.setBadgeTextColor?.({ color: colors.text });
   let text;
   if (minutes === null) text = "💤";
-  else if (kind === "over") text = `+${minutes}m`;
-  else text = `${minutes}m`;
+  else if (kind === "over") text = `+${minutes}`;
+  else text = `${minutes}`;
   chrome.action.setBadgeText({ text });
 }
 
