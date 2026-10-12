@@ -337,7 +337,11 @@
     const elapsed = getElapsedMs(session);
     const min = Math.floor(elapsed / 60000);
     const videos = session.videoCount || 0;
-    const stateText = `${min} min here · ${videos} video${videos !== 1 ? "s" : ""}`;
+    const snoozes = session.snoozeCount || 0;
+    // Same color ramp as the toolbar badge; neutral until the first snooze.
+    const snoozeStyle = snoozes
+      ? ` style="background: ${CONFIG.snoozeBadgeColors(snoozes).background}"`
+      : "";
     const snoozeOptions = getSettings().gateSnoozeOptions;
 
     const banner = document.createElement("div");
@@ -365,7 +369,20 @@
         </div>
       </div>
       <div class="pausetube-phase-snooze">
-        <p class="pausetube-snooze-state">${stateText}</p>
+        <div class="pausetube-stats">
+          <div class="pausetube-stat">
+            <span class="pausetube-stat-num">${min}</span>
+            <span class="pausetube-stat-label">min here</span>
+          </div>
+          <div class="pausetube-stat">
+            <span class="pausetube-stat-num">${videos}</span>
+            <span class="pausetube-stat-label">video${videos !== 1 ? "s" : ""}</span>
+          </div>
+          <div class="pausetube-stat pausetube-stat-snoozes${snoozes ? " active" : ""}"${snoozeStyle}>
+            <span class="pausetube-stat-num">${snoozes}</span>
+            <span class="pausetube-stat-label">snooze${snoozes !== 1 ? "s" : ""}</span>
+          </div>
+        </div>
         <button class="pausetube-choice-done">I'm done</button>
         <button class="pausetube-choice-cancel">Cancel session</button>
       </div>
