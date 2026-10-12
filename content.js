@@ -10,6 +10,7 @@
   let badgeEl = null;
   let stickyEl = null;
   let badgeInterval = null;
+  let heartbeatInterval = null;
   let toastMidpointTimer = null;
   let lastKnownSessionStart = null;
   let lastDisplayedMinute = null;
@@ -407,6 +408,40 @@
     unlockScroll("gate");
   }
 
+  // --- Orphan Handling ---
+
+  // After an extension update/reload this copy is orphaned: chrome.* calls
+  // fail, and the background injects a fresh copy into the tab. Stop every
+  // timer and listener here so the stale copy doesn't fight the new one
+  // (e.g. a failed fetchState reading as "no session" and lifting the blur).
+  // DOM cleanup is left to the new copy — this one can't tell its nodes apart.
+  let orphaned = false;
+
+  function stopIfOrphaned() {
+    if (orphaned) return true;
+    if (chrome.runtime?.id) return false;
+    orphaned = true;
+    clearInterval(badgeInterval);
+    clearInterval(heartbeatInterval);
+    clearTimeout(toastMidpointTimer);
+    urlObserver.disconnect();
+    stopPauseEnforcement();
+    releaseGateFocus?.();
+    releaseIntentFocus?.();
+    return true;
+  }
+
+  // Remove UI left behind by an orphaned copy before mounting our own.
+  function removeStaleUI() {
+    document
+      .querySelectorAll(
+        ".pausetube-feed-banner, .pausetube-intent-overlay, .pausetube-intent-sticky, " +
+          ".pausetube-badge, .pausetube-toast, .pausetube-minute-pulse-backdrop, .pausetube-minute-pulse"
+      )
+      .forEach((el) => el.remove());
+    document.documentElement.classList.remove("pausetube-blur", "pausetube-scroll-lock");
+  }
+
   // --- Risk UI ---
 
   function applyRiskUI() {
@@ -634,6 +669,7 @@
   // --- Lifecycle ---
 
   async function init() {
+    removeStaleUI();
     await fetchState();
     applyRiskUI();
 
@@ -650,18 +686,21 @@
     // Periodic badge updates and risk level checks
     badgeInterval = setInterval(async () => {
       await fetchState();
+      if (stopIfOrphaned()) return;
       updateBadge();
       applyRiskUI();
     }, 10000);
 
     // Heartbeat to keep session alive
-    setInterval(() => {
+    heartbeatInterval = setInterval(() => {
+      if (stopIfOrphaned()) return;
       chrome.runtime.sendMessage({ type: "heartbeat" }).catch(() => {});
     }, 60000);
   }
 
   // YouTube is an SPA — listen for navigation events
   function onNavigate() {
+    if (stopIfOrphaned()) return;
     removeFeedHiddenBanner();
     fetchState().then(() => {
       applyRiskUI();
@@ -678,6 +717,7 @@
   // sync state so a stale session is reset before the user sees it.
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
+      if (stopIfOrphaned()) return;
       chrome.runtime.sendMessage({ type: "heartbeat" }).catch(() => {});
       fetchState().then(() => { updateBadge(); applyRiskUI(); });
     }

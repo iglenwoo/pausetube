@@ -42,6 +42,27 @@ chrome.runtime.onInstalled.addListener(async () => {
     session: session || EMPTY_SESSION,
     snooze: snooze || EMPTY_SNOOZE,
   });
+
+  // Manifest content scripts only reach tabs loaded after install, so YouTube
+  // tabs already open would sit unguarded until refreshed. Start the session
+  // and inject into them now. Tabs still loading get the manifest injection.
+  const tabs = await chrome.tabs.query({ url: "https://www.youtube.com/*" });
+  if (tabs.length === 0) return;
+  await ensureSession();
+  await syncTimerWithYouTubeTabs();
+  await updateBadge();
+  for (const tab of tabs) {
+    if (tab.status !== "complete" || tab.discarded) continue;
+    chrome.scripting
+      .insertCSS({ target: { tabId: tab.id }, files: ["content.css"] })
+      .then(() =>
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["config.js", "content.js"],
+        })
+      )
+      .catch(() => {});
+  }
 });
 
 // --- Session Management ---
