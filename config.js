@@ -156,7 +156,7 @@
   const BADGE_COLORS = {
     ok: { background: "#3B82F6", text: "#FFFFFF" },
     snoozed: { background: "#F59E0B", text: "#1F2937" },
-    over: { background: "#EF4444", text: "#FFFFFF" },
+    over: { background: "#991B1B", text: "#FFFFFF" },
   };
 
   function badgeState({ elapsedMs, highRiskMs, snooze, now = Date.now() }) {
