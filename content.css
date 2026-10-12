@@ -473,13 +473,16 @@ html.pausetube-scroll-lock body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #ef4444;
-  animation: pausetube-pulse 2s infinite;
+  background: #3b82f6;
 }
 
 .pausetube-badge-snoozed .pausetube-badge-dot {
-  background: #6b7280;
-  animation: none;
+  background: #f59e0b;
+}
+
+.pausetube-badge-over .pausetube-badge-dot {
+  background: #ef4444;
+  animation: pausetube-pulse 2s infinite;
 }
 
 @keyframes pausetube-pulse {

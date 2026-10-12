@@ -2,7 +2,7 @@
 // Manages session state, timers, snooze logic, and badge updates
 
 importScripts("config.js");
-const { effectiveSettings, toSparse } = self.PauseTubeConfig;
+const { effectiveSettings, toSparse, BADGE_COLORS, badgeState } = self.PauseTubeConfig;
 
 const EMPTY_SESSION = {
   startTime: null,
@@ -265,29 +265,25 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // --- Badge ---
 
 async function updateBadge() {
-  const { session, snooze } = await getState();
+  const { session, snooze, settings } = await getState();
 
-  if (snooze.active) {
-    chrome.action.setBadgeBackgroundColor({ color: "#6B7280" });
-    chrome.action.setBadgeTextColor?.({ color: "#FFFFFF" });
-    if (snooze.expiresAt) {
-      const remainingMin = Math.ceil(Math.max(0, snooze.expiresAt - Date.now()) / 60000);
-      chrome.action.setBadgeText({ text: `${remainingMin}m` });
-    } else {
-      chrome.action.setBadgeText({ text: "💤" });
-    }
-    return;
-  }
-
-  if (!session.startTime) {
+  if (!snooze.active && !session.startTime) {
     chrome.action.setBadgeText({ text: "" });
     return;
   }
 
-  const elapsedMin = Math.floor(getElapsedMs(session) / 1000 / 60);
-  const text = `${elapsedMin}m`;
-  chrome.action.setBadgeBackgroundColor({ color: "#EF4444" });
-  chrome.action.setBadgeTextColor?.({ color: "#FFFFFF" });
+  const { kind, minutes } = badgeState({
+    elapsedMs: getElapsedMs(session),
+    highRiskMs: settings.highRiskMs,
+    snooze,
+  });
+  const colors = BADGE_COLORS[kind];
+  chrome.action.setBadgeBackgroundColor({ color: colors.background });
+  chrome.action.setBadgeTextColor?.({ color: colors.text });
+  let text;
+  if (minutes === null) text = "💤";
+  else if (kind === "over") text = `+${minutes}m`;
+  else text = `${minutes}m`;
   chrome.action.setBadgeText({ text });
 }
 

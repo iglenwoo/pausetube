@@ -150,6 +150,29 @@
     return out;
   }
 
+  // Timer badge shared by the toolbar icon and the in-page pill. Every number
+  // counts toward something: blue = minutes left before the gate, yellow =
+  // minutes left in a snooze (borrowed time), red = minutes past the gate.
+  const BADGE_COLORS = {
+    ok: { background: "#3B82F6", text: "#FFFFFF" },
+    snoozed: { background: "#F59E0B", text: "#1F2937" },
+    over: { background: "#EF4444", text: "#FFFFFF" },
+  };
+
+  function badgeState({ elapsedMs, highRiskMs, snooze, now = Date.now() }) {
+    if (snooze?.active) {
+      if (!snooze.expiresAt) return { kind: "snoozed", minutes: null };
+      return {
+        kind: "snoozed",
+        minutes: Math.ceil(Math.max(0, snooze.expiresAt - now) / 60000),
+      };
+    }
+    if (elapsedMs < highRiskMs) {
+      return { kind: "ok", minutes: Math.ceil((highRiskMs - elapsedMs) / 60000) };
+    }
+    return { kind: "over", minutes: Math.floor((elapsedMs - highRiskMs) / 60000) };
+  }
+
   root.PauseTubeConfig = {
     SETTINGS_SCHEMA,
     SCHEMA_BY_KEY,
@@ -157,5 +180,7 @@
     clampSettings,
     effectiveSettings,
     toSparse,
+    BADGE_COLORS,
+    badgeState,
   };
 })(typeof self !== "undefined" ? self : this);

@@ -6,7 +6,7 @@ ADHD-friendly YouTube nudges. Don't block — add friction to the dopamine loop.
 
 - **Intent prompt** on first visit: *"What are you here to watch?"*
 - **Time-gate overlay** after 3 min of browsing: pauses the video, runs a ~10s breathing beat, then asks what you want to do — done, more minutes, or cancel the session.
-- **Session timer** with minute pulses, a floating badge, and a matching elapsed-minute count on the extension icon.
+- **Session timer** with minute pulses, a floating badge, and a matching countdown on the extension icon: blue = minutes left before the gate, yellow = minutes left in a snooze, red = minutes past the gate.
 - **Snooze, no off switch.** Suppress nudges for 1/5/10 min from the popup, or 1/3 min from the overlay. No disable toggle.
 
 ## Settings

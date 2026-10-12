@@ -625,33 +625,34 @@
       ? Date.now() - currentState.session.timerStartedAt
       : 0;
     const elapsed = elapsedBase + runningElapsed;
-    const min = Math.floor(elapsed / 60000);
     const videos = currentState.session.videoCount || 0;
-    const snoozed = isSnoozed();
+    const { kind, minutes } = CONFIG.badgeState({
+      elapsedMs: elapsed,
+      highRiskMs: getSettings().highRiskMs,
+      snooze: currentState.snooze,
+    });
 
-    if (snoozed) {
-      badgeEl.className = "pausetube-badge pausetube-badge-snoozed";
-    } else {
-      badgeEl.className = "pausetube-badge";
-    }
+    badgeEl.className = `pausetube-badge pausetube-badge-${kind}`;
 
-    let text = `${min}m · ${videos} video${videos !== 1 ? "s" : ""}`;
-    if (snoozed) {
-      text += " · snoozed";
-    }
+    let timeText;
+    if (kind === "ok") timeText = `${minutes}m left`;
+    else if (kind === "over") timeText = `${minutes}m over`;
+    else if (minutes === null) timeText = "snoozed";
+    else timeText = `${minutes}m snooze`;
+    const text = `${timeText} · ${videos} video${videos !== 1 ? "s" : ""}`;
 
     badgeEl.innerHTML = `<span class="pausetube-badge-dot"></span>${text}`;
 
+    // Pulse each minute ticked off the countdown to the gate.
     if (
+      kind === "ok" &&
       lastDisplayedMinute !== null &&
-      min !== lastDisplayedMinute &&
-      min > 0 &&
-      !snoozed &&
+      minutes !== lastDisplayedMinute &&
       !document.querySelector(".pausetube-feed-banner")
     ) {
-      pulseMinute(min);
+      pulseMinute(minutes);
     }
-    lastDisplayedMinute = min;
+    lastDisplayedMinute = kind === "ok" ? minutes : null;
   }
 
   function pulseMinute(min) {
