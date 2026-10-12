@@ -1,4 +1,4 @@
-// OffTube — Popup Script
+// PauseTube — Popup Script
 
 const statsEl = document.getElementById("stats");
 const intentEl = document.getElementById("intent");
@@ -14,7 +14,7 @@ async function loadState() {
     if (!state) return;
     render(state);
   } catch (err) {
-    console.error("[OffTube popup]", err);
+    console.error("[PauseTube popup]", err);
   }
 }
 

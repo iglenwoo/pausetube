@@ -1,21 +1,21 @@
-/* OffTube — Content Styles */
+/* PauseTube — Content Styles */
 
 /* --- Feed Hide --- */
 
 /* Home feed */
-.offtube-blur ytd-browse[page-subtype="home"] #primary {
+.pausetube-blur ytd-browse[page-subtype="home"] #primary {
   visibility: hidden !important;
 }
 
 /* Watch page sidebar recommendations */
-.offtube-blur ytd-watch-flexy #secondary {
+.pausetube-blur ytd-watch-flexy #secondary {
   visibility: hidden !important;
 }
 
 /* Full-page dim overlay — sits behind the banner (z-index 9998 < 9999).
    Eats clicks: the gate is modal, so nothing behind it stays reachable. The
    banner's own buttons sit above this layer and still work. */
-.offtube-blur body::before {
+.pausetube-blur body::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -28,19 +28,19 @@
 
 /* Scroll lock, shared by the gate and the intent prompt. Applied to <html> by
    lockScroll(); content.js stashes and restores scrollY around it. */
-html.offtube-scroll-lock,
-html.offtube-scroll-lock body {
+html.pausetube-scroll-lock,
+html.pausetube-scroll-lock body {
   overflow: hidden !important;
 }
 
 /* Search results */
-.offtube-blur ytd-search #primary {
+.pausetube-blur ytd-search #primary {
   visibility: hidden !important;
 }
 
 /* --- Feed Hidden Banner --- */
 
-.offtube-feed-banner {
+.pausetube-feed-banner {
   position: fixed;
   top: 50%;
   left: 50%;
@@ -62,7 +62,7 @@ html.offtube-scroll-lock body {
 
 /* --- Phase 1: Breathing --- */
 
-.offtube-phase-breathe {
+.pausetube-phase-breathe {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -71,11 +71,11 @@ html.offtube-scroll-lock body {
   transition: opacity 0.3s ease;
 }
 
-.offtube-phase-breathe.fading {
+.pausetube-phase-breathe.fading {
   opacity: 0;
 }
 
-.offtube-breathe-circle {
+.pausetube-breathe-circle {
   width: 80px;
   height: 80px;
   border-radius: 50%;
@@ -85,27 +85,27 @@ html.offtube-scroll-lock body {
   transition: transform 4s ease-in-out, opacity 4s ease-in-out, background-color 4s ease-in-out;
 }
 
-.offtube-breathe-circle.inhaling {
+.pausetube-breathe-circle.inhaling {
   background: #a78bfa; /* inhale — bright violet */
   transform: scale(1.3);
   opacity: 1;
 }
 
-.offtube-breathe-title {
+.pausetube-breathe-title {
   color: #888;
   font-size: 10px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
 
-.offtube-breathe-text {
+.pausetube-breathe-text {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
 }
 
-.offtube-breathe-viewport {
+.pausetube-breathe-viewport {
   position: relative;
   width: 280px;
   min-height: 24px;
@@ -118,7 +118,7 @@ html.offtube-scroll-lock body {
           mask-image: linear-gradient(90deg, transparent 0, #000 18%, #000 82%, transparent 100%);
 }
 
-.offtube-breathe-strip {
+.pausetube-breathe-strip {
   position: relative;
   display: flex;
   align-items: center;
@@ -132,29 +132,29 @@ html.offtube-scroll-lock body {
   will-change: transform;
 }
 
-.offtube-breathe-step {
+.pausetube-breathe-step {
   color: #3a3a4e; /* upcoming */
   padding: 3px 8px;
   border-radius: 999px;
   transition: color 0.35s ease, background-color 0.35s ease, box-shadow 0.35s ease;
 }
 
-.offtube-breathe-step.past {
+.pausetube-breathe-step.past {
   color: #555;
 }
 
-.offtube-breathe-step.active {
+.pausetube-breathe-step.active {
   color: #ede9fe;
   background-color: rgba(167, 139, 250, 0.2);
   box-shadow: 0 0 12px rgba(167, 139, 250, 0.35);
 }
 
-.offtube-breathe-arrow {
+.pausetube-breathe-arrow {
   color: #2a2a3e;
   font-size: 10px;
 }
 
-.offtube-breathe-count {
+.pausetube-breathe-count {
   color: #e0e0e0;
   font-size: 36px;
   font-weight: 200;
@@ -166,7 +166,7 @@ html.offtube-scroll-lock body {
 
 /* --- Phase 2: Snooze Options --- */
 
-.offtube-phase-snooze {
+.pausetube-phase-snooze {
   display: none;
   flex-direction: column;
   gap: 8px;
@@ -175,11 +175,11 @@ html.offtube-scroll-lock body {
   transition: opacity 0.4s ease;
 }
 
-.offtube-phase-snooze.visible {
+.pausetube-phase-snooze.visible {
   opacity: 1;
 }
 
-.offtube-snooze-state {
+.pausetube-snooze-state {
   color: #666;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
@@ -188,7 +188,7 @@ html.offtube-scroll-lock body {
 }
 
 /* "I'm done" — most visually prominent, feels restful */
-.offtube-choice-done {
+.pausetube-choice-done {
   padding: 15px 16px;
   background: #f0f0f5;
   border: none;
@@ -201,13 +201,13 @@ html.offtube-scroll-lock body {
   letter-spacing: -0.01em;
 }
 
-.offtube-choice-done:hover,
-.offtube-choice-done:focus {
+.pausetube-choice-done:hover,
+.pausetube-choice-done:focus {
   background: #ffffff;
 }
 
 /* Continue options — visible but de-emphasized */
-.offtube-choice-snooze {
+.pausetube-choice-snooze {
   padding: 10px 16px;
   background: transparent;
   border: 1px solid #2a2a3e;
@@ -218,14 +218,14 @@ html.offtube-scroll-lock body {
   transition: border-color 0.15s, color 0.15s;
 }
 
-.offtube-choice-snooze:hover,
-.offtube-choice-snooze:focus {
+.pausetube-choice-snooze:hover,
+.pausetube-choice-snooze:focus {
   border-color: #4a4a5e;
   color: #aaa;
 }
 
 /* Cancel session — softest option */
-.offtube-choice-cancel {
+.pausetube-choice-cancel {
   padding: 8px 16px;
   background: none;
   border: none;
@@ -238,23 +238,23 @@ html.offtube-scroll-lock body {
   white-space: nowrap;
 }
 
-.offtube-choice-cancel:hover,
-.offtube-choice-cancel:focus {
+.pausetube-choice-cancel:hover,
+.pausetube-choice-cancel:focus {
   color: #a5b4fc;
 }
 
 /* Keyboard focus ring. Plain :focus, not :focus-visible — the gate moves focus
    programmatically when the snooze phase appears, which :focus-visible would
    only style if the last input happened to be a key press. */
-.offtube-feed-banner button:focus,
-.offtube-intent-card button:focus {
+.pausetube-feed-banner button:focus,
+.pausetube-intent-card button:focus {
   outline: 2px solid #a5b4fc;
   outline-offset: 3px;
 }
 
 /* --- Minute Pulse (every 1m tick) --- */
 
-.offtube-minute-pulse-backdrop {
+.pausetube-minute-pulse-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
@@ -262,10 +262,10 @@ html.offtube-scroll-lock body {
   -webkit-backdrop-filter: blur(2px);
   z-index: 99998;
   pointer-events: none;
-  animation: offtube-minute-backdrop 1s ease-out forwards;
+  animation: pausetube-minute-backdrop 1s ease-out forwards;
 }
 
-.offtube-minute-pulse {
+.pausetube-minute-pulse {
   position: fixed;
   top: 50%;
   left: 50%;
@@ -279,16 +279,16 @@ html.offtube-scroll-lock body {
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   z-index: 99999;
   pointer-events: none;
-  animation: offtube-minute-blink 1s ease-out forwards;
+  animation: pausetube-minute-blink 1s ease-out forwards;
 }
 
-@keyframes offtube-minute-backdrop {
+@keyframes pausetube-minute-backdrop {
   0%   { opacity: 0; }
   15%  { opacity: 1; }
   100% { opacity: 0; }
 }
 
-@keyframes offtube-minute-blink {
+@keyframes pausetube-minute-blink {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
   15%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   40%  { opacity: 0.2; }
@@ -298,7 +298,7 @@ html.offtube-scroll-lock body {
 
 /* --- Toast --- */
 
-.offtube-toast {
+.pausetube-toast {
   position: fixed;
   top: 72px;
   left: 50%;
@@ -317,13 +317,13 @@ html.offtube-scroll-lock body {
   transition: opacity 0.5s ease;
 }
 
-.offtube-toast-hide {
+.pausetube-toast-hide {
   opacity: 0;
 }
 
 /* --- Intent Prompt Overlay --- */
 
-.offtube-intent-overlay {
+.pausetube-intent-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -339,7 +339,7 @@ html.offtube-scroll-lock body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-.offtube-intent-card {
+.pausetube-intent-card {
   background: #1a1a2e;
   border-radius: 16px;
   padding: 48px;
@@ -349,20 +349,20 @@ html.offtube-scroll-lock body {
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
 }
 
-.offtube-intent-card h1 {
+.pausetube-intent-card h1 {
   color: #e0e0e0;
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 8px 0;
 }
 
-.offtube-intent-card p {
+.pausetube-intent-card p {
   color: #888;
   font-size: 14px;
   margin: 0 0 32px 0;
 }
 
-.offtube-intent-input {
+.pausetube-intent-input {
   width: 100%;
   padding: 14px 18px;
   border: 2px solid #333;
@@ -375,15 +375,15 @@ html.offtube-scroll-lock body {
   transition: border-color 0.2s;
 }
 
-.offtube-intent-input:focus {
+.pausetube-intent-input:focus {
   border-color: #6366f1;
 }
 
-.offtube-intent-input::placeholder {
+.pausetube-intent-input::placeholder {
   color: #555;
 }
 
-.offtube-intent-submit {
+.pausetube-intent-submit {
   margin-top: 16px;
   padding: 12px 32px;
   background: #6366f1;
@@ -396,12 +396,12 @@ html.offtube-scroll-lock body {
   transition: background 0.2s;
 }
 
-.offtube-intent-submit:hover,
-.offtube-intent-submit:focus {
+.pausetube-intent-submit:hover,
+.pausetube-intent-submit:focus {
   background: #4f46e5;
 }
 
-.offtube-intent-skip {
+.pausetube-intent-skip {
   margin-top: 12px;
   padding: 8px 16px;
   background: none;
@@ -411,14 +411,14 @@ html.offtube-scroll-lock body {
   cursor: pointer;
 }
 
-.offtube-intent-skip:hover,
-.offtube-intent-skip:focus {
+.pausetube-intent-skip:hover,
+.pausetube-intent-skip:focus {
   color: #999;
 }
 
 /* --- Intent Sticky Reminder --- */
 
-.offtube-intent-sticky {
+.pausetube-intent-sticky {
   position: fixed;
   top: 16px;
   right: 16px;
@@ -438,13 +438,13 @@ html.offtube-scroll-lock body {
   transition: opacity 0.2s;
 }
 
-.offtube-intent-sticky:hover {
+.pausetube-intent-sticky:hover {
   opacity: 1;
 }
 
 /* --- Floating Session Badge --- */
 
-.offtube-badge {
+.pausetube-badge {
   position: fixed;
   bottom: 16px;
   right: 16px;
@@ -465,24 +465,24 @@ html.offtube-scroll-lock body {
   user-select: none;
 }
 
-.offtube-badge:hover {
+.pausetube-badge:hover {
   opacity: 1;
 }
 
-.offtube-badge-dot {
+.pausetube-badge-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: #ef4444;
-  animation: offtube-pulse 2s infinite;
+  animation: pausetube-pulse 2s infinite;
 }
 
-.offtube-badge-snoozed .offtube-badge-dot {
+.pausetube-badge-snoozed .pausetube-badge-dot {
   background: #6b7280;
   animation: none;
 }
 
-@keyframes offtube-pulse {
+@keyframes pausetube-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }

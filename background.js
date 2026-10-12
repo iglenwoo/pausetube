@@ -1,8 +1,8 @@
-// OffTube — Background Service Worker
+// PauseTube — Background Service Worker
 // Manages session state, timers, snooze logic, and badge updates
 
 importScripts("config.js");
-const { effectiveSettings, toSparse } = self.OffTubeConfig;
+const { effectiveSettings, toSparse } = self.PauseTubeConfig;
 
 const EMPTY_SESSION = {
   startTime: null,

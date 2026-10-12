@@ -1,4 +1,4 @@
-// OffTube — Debug Console
+// PauseTube — Debug Console
 // Live raw + derived state, with controls to force states and a raw-JSON editor.
 
 const $ = (id) => document.getElementById(id);

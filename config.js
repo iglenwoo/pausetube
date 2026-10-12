@@ -1,4 +1,4 @@
-// OffTube — Shared config
+// PauseTube — Shared config
 // Single source of truth for what is configurable, the valid range, and the
 // defaults. Loaded by the service worker (importScripts), the content script
 // (manifest content_scripts), and the popup/options/debug pages (<script>).
@@ -150,7 +150,7 @@
     return out;
   }
 
-  root.OffTubeConfig = {
+  root.PauseTubeConfig = {
     SETTINGS_SCHEMA,
     SCHEMA_BY_KEY,
     DEFAULT_SETTINGS,

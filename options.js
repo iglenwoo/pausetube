@@ -1,10 +1,10 @@
-// OffTube — Options page
+// PauseTube — Options page
 // Renders a settings form straight from the shared SETTINGS_SCHEMA and saves
 // (auto-saves on change) through the background's set-settings handler, which
 // clamps and stores overrides sparsely. Number knobs are shown in display units
 // (value / scale) and converted back on save.
 
-const CONFIG = self.OffTubeConfig;
+const CONFIG = self.PauseTubeConfig;
 const { SETTINGS_SCHEMA } = CONFIG;
 
 const form = document.getElementById("form");

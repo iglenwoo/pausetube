@@ -1,10 +1,10 @@
-// OffTube — Content Script
+// PauseTube — Content Script
 // Injected into YouTube pages: blur, intent prompt, floating badge
 
 (function () {
   "use strict";
 
-  const CONFIG = self.OffTubeConfig;
+  const CONFIG = self.PauseTubeConfig;
 
   let currentState = null;
   let badgeEl = null;
@@ -53,7 +53,7 @@
     // The session hasn't really started until the user commits to an intent.
     // While the intent prompt is still on screen, don't count risk time —
     // set-intent restarts the clock once they answer.
-    if (document.querySelector(".offtube-intent-overlay")) return "none";
+    if (document.querySelector(".pausetube-intent-overlay")) return "none";
     const highRiskMs = getSettings().highRiskMs;
     const elapsed = getElapsedMs(currentState.session);
     if (elapsed >= highRiskMs) return "high";
@@ -72,7 +72,7 @@
     if (scrollLockOwners.has(owner)) return;
     if (scrollLockOwners.size === 0) {
       lockedScrollY = window.scrollY;
-      document.documentElement.classList.add("offtube-scroll-lock");
+      document.documentElement.classList.add("pausetube-scroll-lock");
     }
     scrollLockOwners.add(owner);
   }
@@ -80,7 +80,7 @@
   function unlockScroll(owner) {
     if (!scrollLockOwners.delete(owner)) return;
     if (scrollLockOwners.size > 0) return;
-    document.documentElement.classList.remove("offtube-scroll-lock");
+    document.documentElement.classList.remove("pausetube-scroll-lock");
     // No-op where the browser kept the offset; insurance where it didn't.
     window.scrollTo(0, lockedScrollY);
   }
@@ -220,11 +220,11 @@
   }
 
   function runBreathing(banner, onComplete) {
-    const circle = banner.querySelector(".offtube-breathe-circle");
-    const viewport = banner.querySelector(".offtube-breathe-viewport");
-    const strip = banner.querySelector(".offtube-breathe-strip");
-    const steps = banner.querySelectorAll(".offtube-breathe-step");
-    const countLabel = banner.querySelector(".offtube-breathe-count");
+    const circle = banner.querySelector(".pausetube-breathe-circle");
+    const viewport = banner.querySelector(".pausetube-breathe-viewport");
+    const strip = banner.querySelector(".pausetube-breathe-strip");
+    const steps = banner.querySelectorAll(".pausetube-breathe-step");
+    const countLabel = banner.querySelector(".pausetube-breathe-count");
 
     const settings = getSettings();
     const INHALE_S = settings.breatheInhaleSec;
@@ -314,8 +314,8 @@
   }
 
   function showSnoozePhase(banner) {
-    const breatheEl = banner.querySelector(".offtube-phase-breathe");
-    const snoozeEl = banner.querySelector(".offtube-phase-snooze");
+    const breatheEl = banner.querySelector(".pausetube-phase-breathe");
+    const snoozeEl = banner.querySelector(".pausetube-phase-snooze");
     breatheEl.classList.add("fading");
     setTimeout(() => {
       breatheEl.style.display = "none";
@@ -330,7 +330,7 @@
   }
 
   function showFeedHiddenBanner() {
-    if (document.querySelector(".offtube-feed-banner")) return;
+    if (document.querySelector(".pausetube-feed-banner")) return;
 
     const session = currentState?.session || {};
     const elapsed = getElapsedMs(session);
@@ -340,53 +340,53 @@
     const snoozeOptions = getSettings().gateSnoozeOptions;
 
     const banner = document.createElement("div");
-    banner.className = "offtube-feed-banner";
+    banner.className = "pausetube-feed-banner";
     banner.setAttribute("role", "dialog");
     banner.setAttribute("aria-modal", "true");
-    banner.setAttribute("aria-label", "OffTube session check");
+    banner.setAttribute("aria-label", "PauseTube session check");
     banner.innerHTML = `
-      <div class="offtube-phase-breathe">
-        <div class="offtube-breathe-title">Deep Breath</div>
-        <div class="offtube-breathe-circle"></div>
-        <div class="offtube-breathe-text">
-          <div class="offtube-breathe-viewport">
-            <div class="offtube-breathe-strip">
-              <span class="offtube-breathe-step" data-phase="ready">ready</span>
-              <span class="offtube-breathe-arrow">→</span>
-              <span class="offtube-breathe-step" data-phase="inhale">inhale</span>
-              <span class="offtube-breathe-arrow">→</span>
-              <span class="offtube-breathe-step" data-phase="hold">hold</span>
-              <span class="offtube-breathe-arrow">→</span>
-              <span class="offtube-breathe-step" data-phase="exhale">exhale</span>
+      <div class="pausetube-phase-breathe">
+        <div class="pausetube-breathe-title">Deep Breath</div>
+        <div class="pausetube-breathe-circle"></div>
+        <div class="pausetube-breathe-text">
+          <div class="pausetube-breathe-viewport">
+            <div class="pausetube-breathe-strip">
+              <span class="pausetube-breathe-step" data-phase="ready">ready</span>
+              <span class="pausetube-breathe-arrow">→</span>
+              <span class="pausetube-breathe-step" data-phase="inhale">inhale</span>
+              <span class="pausetube-breathe-arrow">→</span>
+              <span class="pausetube-breathe-step" data-phase="hold">hold</span>
+              <span class="pausetube-breathe-arrow">→</span>
+              <span class="pausetube-breathe-step" data-phase="exhale">exhale</span>
             </div>
           </div>
-          <span class="offtube-breathe-count"></span>
+          <span class="pausetube-breathe-count"></span>
         </div>
       </div>
-      <div class="offtube-phase-snooze">
-        <p class="offtube-snooze-state">${stateText}</p>
-        <button class="offtube-choice-done">I'm done</button>
-        <button class="offtube-choice-cancel">Cancel session</button>
+      <div class="pausetube-phase-snooze">
+        <p class="pausetube-snooze-state">${stateText}</p>
+        <button class="pausetube-choice-done">I'm done</button>
+        <button class="pausetube-choice-cancel">Cancel session</button>
       </div>
     `;
 
     // Snooze ("more min") buttons are configurable — build them from settings and
     // insert them between "I'm done" and "Cancel session".
-    const snoozePhase = banner.querySelector(".offtube-phase-snooze");
-    const cancelBtn = snoozePhase.querySelector(".offtube-choice-cancel");
+    const snoozePhase = banner.querySelector(".pausetube-phase-snooze");
+    const cancelBtn = snoozePhase.querySelector(".pausetube-choice-cancel");
     snoozeOptions.forEach((minutes) => {
       const btn = document.createElement("button");
-      btn.className = "offtube-choice-snooze";
+      btn.className = "pausetube-choice-snooze";
       btn.textContent = `${minutes} more min`;
       btn.addEventListener("click", () => handleSnoozeClick(minutes, null));
       snoozePhase.insertBefore(btn, cancelBtn);
     });
 
-    banner.querySelector(".offtube-choice-done")?.addEventListener("click", () => {
+    banner.querySelector(".pausetube-choice-done")?.addEventListener("click", () => {
       chrome.runtime.sendMessage({ type: "done-session" });
     });
 
-    banner.querySelector(".offtube-choice-cancel")?.addEventListener("click", async () => {
+    banner.querySelector(".pausetube-choice-cancel")?.addEventListener("click", async () => {
       await chrome.runtime.sendMessage({ type: "reset-session" });
       await fetchState();
       applyRiskUI();
@@ -403,7 +403,7 @@
   function removeFeedHiddenBanner() {
     releaseGateFocus?.();
     releaseGateFocus = null;
-    document.querySelector(".offtube-feed-banner")?.remove();
+    document.querySelector(".pausetube-feed-banner")?.remove();
     unlockScroll("gate");
   }
 
@@ -418,14 +418,14 @@
     }
 
     if (risk === "snoozed" || risk === "none") {
-      document.documentElement.classList.remove("offtube-blur");
+      document.documentElement.classList.remove("pausetube-blur");
       stopPauseEnforcement();
       removeFeedHiddenBanner();
       return;
     }
 
     // high
-    document.documentElement.classList.add("offtube-blur");
+    document.documentElement.classList.add("pausetube-blur");
     startPauseEnforcement();
     showFeedHiddenBanner();
   }
@@ -459,28 +459,28 @@
   }
 
   function showIntentPrompt() {
-    if (document.querySelector(".offtube-intent-overlay")) return;
+    if (document.querySelector(".pausetube-intent-overlay")) return;
 
     const overlay = document.createElement("div");
-    overlay.className = "offtube-intent-overlay";
+    overlay.className = "pausetube-intent-overlay";
     overlay.setAttribute("role", "dialog");
     overlay.setAttribute("aria-modal", "true");
-    overlay.setAttribute("aria-labelledby", "offtube-intent-title");
+    overlay.setAttribute("aria-labelledby", "pausetube-intent-title");
     overlay.innerHTML = `
-      <div class="offtube-intent-card">
-        <h1 id="offtube-intent-title">What are you here to watch?</h1>
+      <div class="pausetube-intent-card">
+        <h1 id="pausetube-intent-title">What are you here to watch?</h1>
         <p>Having a purpose helps you stay in control.</p>
-        <input class="offtube-intent-input" type="text" placeholder="e.g. Next.js tutorial, music for studying..." autofocus />
+        <input class="pausetube-intent-input" type="text" placeholder="e.g. Next.js tutorial, music for studying..." autofocus />
         <br />
-        <button class="offtube-intent-submit">Let's go</button>
+        <button class="pausetube-intent-submit">Let's go</button>
         <br />
-        <button class="offtube-intent-skip">Just browsing</button>
+        <button class="pausetube-intent-skip">Just browsing</button>
       </div>
     `;
 
-    const input = overlay.querySelector(".offtube-intent-input");
-    const submitBtn = overlay.querySelector(".offtube-intent-submit");
-    const skipBtn = overlay.querySelector(".offtube-intent-skip");
+    const input = overlay.querySelector(".pausetube-intent-input");
+    const submitBtn = overlay.querySelector(".pausetube-intent-submit");
+    const skipBtn = overlay.querySelector(".pausetube-intent-skip");
 
     async function submit() {
       const intent = input.value.trim() || "Just browsing";
@@ -510,7 +510,7 @@
   function removeIntentPrompt() {
     releaseIntentFocus?.();
     releaseIntentFocus = null;
-    document.querySelector(".offtube-intent-overlay")?.remove();
+    document.querySelector(".pausetube-intent-overlay")?.remove();
     unlockScroll("intent");
   }
 
@@ -520,7 +520,7 @@
     removeIntentSticky();
 
     stickyEl = document.createElement("div");
-    stickyEl.className = "offtube-intent-sticky";
+    stickyEl.className = "pausetube-intent-sticky";
     stickyEl.textContent = `🎯 ${currentState.session.intent}`;
     document.body.appendChild(stickyEl);
   }
@@ -535,7 +535,7 @@
   // --- Toast ---
 
   function showToast() {
-    document.querySelector(".offtube-toast")?.remove();
+    document.querySelector(".pausetube-toast")?.remove();
 
     const snoozeCount = currentState?.session?.snoozeCount || 0;
     const totalSnoozedMs = currentState?.session?.totalSnoozedMs || 0;
@@ -545,12 +545,12 @@
       : `Snoozed ${snoozeCount}×`;
 
     const toast = document.createElement("div");
-    toast.className = "offtube-toast";
+    toast.className = "pausetube-toast";
     toast.textContent = text;
     document.body.appendChild(toast);
 
     setTimeout(() => {
-      toast.classList.add("offtube-toast-hide");
+      toast.classList.add("pausetube-toast-hide");
       setTimeout(() => toast.remove(), 500);
     }, 4000);
   }
@@ -577,7 +577,7 @@
     if (badgeEl) return;
 
     badgeEl = document.createElement("div");
-    badgeEl.className = "offtube-badge";
+    badgeEl.className = "pausetube-badge";
     document.body.appendChild(badgeEl);
     updateBadge();
   }
@@ -595,9 +595,9 @@
     const snoozed = isSnoozed();
 
     if (snoozed) {
-      badgeEl.className = "offtube-badge offtube-badge-snoozed";
+      badgeEl.className = "pausetube-badge pausetube-badge-snoozed";
     } else {
-      badgeEl.className = "offtube-badge";
+      badgeEl.className = "pausetube-badge";
     }
 
     let text = `${min}m · ${videos} video${videos !== 1 ? "s" : ""}`;
@@ -605,14 +605,14 @@
       text += " · snoozed";
     }
 
-    badgeEl.innerHTML = `<span class="offtube-badge-dot"></span>${text}`;
+    badgeEl.innerHTML = `<span class="pausetube-badge-dot"></span>${text}`;
 
     if (
       lastDisplayedMinute !== null &&
       min !== lastDisplayedMinute &&
       min > 0 &&
       !snoozed &&
-      !document.querySelector(".offtube-feed-banner")
+      !document.querySelector(".pausetube-feed-banner")
     ) {
       pulseMinute(min);
     }
@@ -620,11 +620,11 @@
   }
 
   function pulseMinute(min) {
-    document.querySelector(".offtube-minute-pulse-backdrop")?.remove();
+    document.querySelector(".pausetube-minute-pulse-backdrop")?.remove();
     const backdrop = document.createElement("div");
-    backdrop.className = "offtube-minute-pulse-backdrop";
+    backdrop.className = "pausetube-minute-pulse-backdrop";
     const pulse = document.createElement("div");
-    pulse.className = "offtube-minute-pulse";
+    pulse.className = "pausetube-minute-pulse";
     pulse.textContent = `${min}`;
     backdrop.appendChild(pulse);
     document.body.appendChild(backdrop);

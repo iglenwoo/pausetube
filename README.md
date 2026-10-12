@@ -1,4 +1,4 @@
-# OffTube
+# PauseTube
 
 ADHD-friendly YouTube nudges. Don't block — add friction to the dopamine loop.
 
