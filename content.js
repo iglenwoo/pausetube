@@ -208,6 +208,9 @@
     await chrome.runtime.sendMessage({ type: "start-snooze", minutes, videoLimit });
     await fetchState();
     applyRiskUI();
+    // Resume playback only in the tab where the snooze was chosen. Other tabs
+    // lift their gate off the storage change but stay paused.
+    document.querySelectorAll("video").forEach((v) => v.play().catch(() => {}));
   }
 
   function runBreathing(banner, onComplete) {
@@ -708,15 +711,11 @@
     }
 
     if (changes.snooze) {
-      const wasSnoozed = currentState.snooze?.active === true;
       currentState.snooze = changes.snooze.newValue || {};
       applyRiskUI();
       updateBadge();
 
       if (currentState.snooze.active) {
-        if (!wasSnoozed) {
-          document.querySelectorAll("video").forEach((v) => v.play().catch(() => {}));
-        }
         fetchState().then(() => {
           showToast();
           scheduleToastMidpoint();
