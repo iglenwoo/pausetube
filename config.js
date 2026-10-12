@@ -172,27 +172,17 @@
     return { kind: "over", minutes: Math.floor((elapsedMs - highRiskMs) / 60000) };
   }
 
-  // Toolbar badge: snoozes this session. The color blends from calm gray at 1
-  // to dark red at 10+, getting more serious with each snooze. No green at the
-  // low end, so snoozing never reads as a win, and the top is dark red so it
-  // stays distinct on the red icon.
+  // Toolbar badge: snoozes this session. The color blends from calm blue at 1
+  // through violet and crimson to red-black at 10+, getting more serious with
+  // each snooze. The top is near-black so it stays distinct on the red icon.
   const SNOOZE_BADGE_STOPS = [
-    { count: 1, color: [0x6b, 0x72, 0x80] }, // gray
-    { count: 3, color: [0xf5, 0x9e, 0x0b] }, // amber
-    { count: 6, color: [0xea, 0x58, 0x0c] }, // orange
-    { count: 10, color: [0x99, 0x1b, 0x1b] }, // dark red
+    { count: 1, color: [0x3b, 0x82, 0xf6] }, // blue
+    { count: 4, color: [0x7c, 0x3a, 0xed] }, // violet
+    { count: 7, color: [0xbe, 0x12, 0x3c] }, // crimson
+    { count: 10, color: [0x45, 0x0a, 0x0a] }, // red-black
   ];
 
   const toHex = (rgb) => "#" + rgb.map((c) => c.toString(16).padStart(2, "0")).join("");
-
-  // WCAG relative luminance, used to pick the more readable text color.
-  function luminance(rgb) {
-    const [r, g, b] = rgb.map((c) => {
-      const v = c / 255;
-      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-    });
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  }
 
   function snoozeBadgeColors(count) {
     const stops = SNOOZE_BADGE_STOPS;
@@ -203,11 +193,8 @@
     const hi = stops[i + 1] || lo;
     const t = hi === lo ? 0 : (n - lo.count) / (hi.count - lo.count);
     const rgb = lo.color.map((c, k) => Math.round(c + (hi.color[k] - c) * t));
-    // Contrast vs white is 1.05 / (L + 0.05); vs #1F2937 (L ≈ 0.0225) it's
-    // (L + 0.05) / 0.0725. Pick whichever is higher.
-    const L = luminance(rgb);
-    const text = 1.05 / (L + 0.05) >= (L + 0.05) / 0.0725 ? "#FFFFFF" : "#1F2937";
-    return { background: toHex(rgb), text };
+    // Every color on the ramp is dark enough for white text.
+    return { background: toHex(rgb), text: "#FFFFFF" };
   }
 
   root.PauseTubeConfig = {
