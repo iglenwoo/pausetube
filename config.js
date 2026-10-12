@@ -150,8 +150,7 @@
     return out;
   }
 
-  // Timer badge shared by the toolbar icon and the in-page pill. Every number
-  // counts toward something: blue = minutes left before the gate, yellow =
+  // In-page timer pill. Every number counts toward something: blue = minutes left before the gate, yellow =
   // minutes left in a snooze (borrowed time), red = minutes past the gate.
   const BADGE_COLORS = {
     ok: { background: "#3B82F6", text: "#FFFFFF" },
@@ -173,6 +172,44 @@
     return { kind: "over", minutes: Math.floor((elapsedMs - highRiskMs) / 60000) };
   }
 
+  // Toolbar badge: snoozes this session. The color blends from calm gray at 1
+  // to dark red at 10+, getting more serious with each snooze. No green at the
+  // low end, so snoozing never reads as a win, and the top is dark red so it
+  // stays distinct on the red icon.
+  const SNOOZE_BADGE_STOPS = [
+    { count: 1, color: [0x6b, 0x72, 0x80] }, // gray
+    { count: 3, color: [0xf5, 0x9e, 0x0b] }, // amber
+    { count: 6, color: [0xea, 0x58, 0x0c] }, // orange
+    { count: 10, color: [0x99, 0x1b, 0x1b] }, // dark red
+  ];
+
+  const toHex = (rgb) => "#" + rgb.map((c) => c.toString(16).padStart(2, "0")).join("");
+
+  // WCAG relative luminance, used to pick the more readable text color.
+  function luminance(rgb) {
+    const [r, g, b] = rgb.map((c) => {
+      const v = c / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
+  function snoozeBadgeColors(count) {
+    const stops = SNOOZE_BADGE_STOPS;
+    const n = Math.min(Math.max(count, stops[0].count), stops[stops.length - 1].count);
+    let i = 0;
+    while (n > stops[i + 1]?.count) i++;
+    const lo = stops[i];
+    const hi = stops[i + 1] || lo;
+    const t = hi === lo ? 0 : (n - lo.count) / (hi.count - lo.count);
+    const rgb = lo.color.map((c, k) => Math.round(c + (hi.color[k] - c) * t));
+    // Contrast vs white is 1.05 / (L + 0.05); vs #1F2937 (L ≈ 0.0225) it's
+    // (L + 0.05) / 0.0725. Pick whichever is higher.
+    const L = luminance(rgb);
+    const text = 1.05 / (L + 0.05) >= (L + 0.05) / 0.0725 ? "#FFFFFF" : "#1F2937";
+    return { background: toHex(rgb), text };
+  }
+
   root.PauseTubeConfig = {
     SETTINGS_SCHEMA,
     SCHEMA_BY_KEY,
@@ -182,5 +219,6 @@
     toSparse,
     BADGE_COLORS,
     badgeState,
+    snoozeBadgeColors,
   };
 })(typeof self !== "undefined" ? self : this);

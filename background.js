@@ -2,7 +2,7 @@
 // Manages session state, timers, snooze logic, and badge updates
 
 importScripts("config.js");
-const { effectiveSettings, toSparse, BADGE_COLORS, badgeState } = self.PauseTubeConfig;
+const { effectiveSettings, toSparse, snoozeBadgeColors } = self.PauseTubeConfig;
 
 const EMPTY_SESSION = {
   startTime: null,
@@ -265,26 +265,18 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // --- Badge ---
 
 async function updateBadge() {
-  const { session, snooze, settings } = await getState();
+  const { session } = await getState();
+  const count = session.snoozeCount || 0;
 
-  if (!snooze.active && !session.startTime) {
+  if (count === 0) {
     chrome.action.setBadgeText({ text: "" });
     return;
   }
 
-  const { kind, minutes } = badgeState({
-    elapsedMs: getElapsedMs(session),
-    highRiskMs: settings.highRiskMs,
-    snooze,
-  });
-  const colors = BADGE_COLORS[kind];
+  const colors = snoozeBadgeColors(count);
   chrome.action.setBadgeBackgroundColor({ color: colors.background });
   chrome.action.setBadgeTextColor?.({ color: colors.text });
-  let text;
-  if (minutes === null) text = "💤";
-  else if (kind === "over") text = `+${minutes}`;
-  else text = `${minutes}`;
-  chrome.action.setBadgeText({ text });
+  chrome.action.setBadgeText({ text: `${count}` });
 }
 
 // --- Tab Monitoring ---
