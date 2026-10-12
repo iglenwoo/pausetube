@@ -206,10 +206,16 @@
 
   async function handleSnoozeClick(minutes, videoLimit) {
     await chrome.runtime.sendMessage({ type: "start-snooze", minutes, videoLimit });
+    await resumePlayback();
+  }
+
+  // Resume playback only in the tab where the snooze was chosen (the gate here,
+  // or the popup's active tab). Other tabs lift their gate off the storage
+  // change but stay paused. Sync state first so the gate's pause guard is gone
+  // before play() — otherwise it pauses the video straight back.
+  async function resumePlayback() {
     await fetchState();
     applyRiskUI();
-    // Resume playback only in the tab where the snooze was chosen. Other tabs
-    // lift their gate off the storage change but stay paused.
     document.querySelectorAll("video").forEach((v) => v.play().catch(() => {}));
   }
 
@@ -689,6 +695,12 @@
     }
   });
   urlObserver.observe(document.body, { childList: true, subtree: true });
+
+  // The popup snoozes via the background, so no click lands in this tab — it
+  // asks the active tab to resume instead.
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.type === "resume-playback") resumePlayback();
+  });
 
   // Cross-tab state sync. session/snooze/settings are a single source of truth
   // in chrome.storage.local; the background worker (and debug console) only ever

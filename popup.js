@@ -32,6 +32,9 @@ function buildSnoozeButtons(options) {
     btn.textContent = `${min}m`;
     btn.addEventListener("click", async () => {
       await chrome.runtime.sendMessage({ type: "start-snooze", minutes: min, videoLimit: null });
+      // Resume only the tab the user is looking at, like the in-page gate does.
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: "resume-playback" }).catch(() => {});
       await loadState();
     });
     snoozeControls.appendChild(btn);
