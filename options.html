@@ -61,7 +61,7 @@
 
     .unit { color: #6b7280; font-size: 12px; }
 
-    input[type="number"], input[type="text"] {
+    input[type="number"] {
       background: #0f0f23;
       border: 1px solid #34344e;
       border-radius: 8px;
@@ -73,7 +73,66 @@
       font-variant-numeric: tabular-nums;
     }
 
-    input[type="text"] { width: 140px; text-align: left; }
+    /* Minute chips: one per snooze button, "+ Add" opens an inline input */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 6px;
+      max-width: 240px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #23233a;
+      border: 1px solid #34344e;
+      border-radius: 999px;
+      color: #e0e0e0;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      padding: 4px 6px 4px 10px;
+      white-space: nowrap;
+    }
+
+    .chip:not(:has(.chip-remove)) { padding-right: 10px; }
+
+    .chip-remove {
+      background: none;
+      border: none;
+      border-radius: 50%;
+      color: #6b7280;
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+      width: 18px;
+      height: 18px;
+    }
+    .chip-remove:hover { background: #34344e; color: #ef4444; }
+
+    .chip-add {
+      background: none;
+      border: 1px dashed #34344e;
+      border-radius: 999px;
+      color: #8b8ba7;
+      cursor: pointer;
+      font-size: 13px;
+      padding: 4px 10px;
+    }
+    .chip-add:hover { border-color: #6366f1; color: #a5b4fc; }
+
+    input[type="number"].chip-input {
+      width: 64px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 13px;
+      text-align: center;
+      appearance: textfield;
+    }
+    .chip-input::-webkit-inner-spin-button,
+    .chip-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     input:focus { outline: none; border-color: #6366f1; }
 
     /* iOS-style toggle */

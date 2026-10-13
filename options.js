@@ -2,7 +2,8 @@
 // Renders a settings form straight from the shared SETTINGS_SCHEMA and saves
 // (auto-saves on change) through the background's set-settings handler, which
 // clamps and stores overrides sparsely. Number knobs are shown in display units
-// (value / scale) and converted back on save.
+// (value / scale) and converted back on save. Minute lists are edited as chips:
+// "+ Add" opens a small input, × removes one.
 
 const CONFIG = self.PauseTubeConfig;
 const { SETTINGS_SCHEMA } = CONFIG;
@@ -33,9 +34,7 @@ function fieldHtml(spec) {
         min="${spec.min / spec.scale}" max="${spec.max / spec.scale}" step="${spec.step / spec.scale}" />` +
       `<span class="unit">${esc(spec.unit)}</span>`;
   } else if (spec.type === "minutes-list") {
-    control =
-      `<input type="text" id="${id}" data-key="${spec.key}" placeholder="e.g. 1, 5, 10" />` +
-      `<span class="unit">min</span>`;
+    control = `<div class="chips" id="${id}" data-key="${spec.key}"></div>`;
   }
   return `
     <div class="field">
@@ -60,6 +59,74 @@ function buildForm() {
     )
     .join("");
   form.addEventListener("change", onChange);
+  form.addEventListener("click", onChipClick);
+  form.addEventListener("submit", (e) => e.preventDefault());
+}
+
+// --- Minute chips ---
+
+function renderChips(el, minutes) {
+  el.dataset.values = JSON.stringify(minutes);
+  // Keep at least one: an empty list isn't valid and would fall back to defaults.
+  const removable = minutes.length > 1;
+  el.innerHTML =
+    minutes
+      .map(
+        (m) => `<span class="chip">${m} min${
+          removable
+            ? `<button type="button" class="chip-remove" data-minutes="${m}" aria-label="Remove ${m} min">×</button>`
+            : ""
+        }</span>`
+      )
+      .join("") + `<button type="button" class="chip-add">+ Add</button>`;
+}
+
+function chipValues(el) {
+  return JSON.parse(el.dataset.values || "[]");
+}
+
+function onChipClick(e) {
+  const chips = e.target.closest(".chips");
+  if (!chips) return;
+
+  if (e.target.classList.contains("chip-remove")) {
+    const m = Number(e.target.dataset.minutes);
+    renderChips(chips, chipValues(chips).filter((v) => v !== m));
+    save();
+  } else if (e.target.classList.contains("chip-add")) {
+    openChipInput(chips, e.target);
+  }
+}
+
+function openChipInput(chips, addBtn) {
+  const input = document.createElement("input");
+  input.type = "number";
+  input.className = "chip-input";
+  input.min = "1";
+  input.max = "180";
+  input.placeholder = "min";
+  input.setAttribute("aria-label", "Minutes to add");
+  addBtn.replaceWith(input);
+  input.focus();
+
+  let done = false;
+  const finish = (commit) => {
+    if (done) return;
+    done = true;
+    const n = Math.round(Number(input.value));
+    const values = chipValues(chips);
+    if (commit && input.value !== "" && n >= 1 && n <= 180 && !values.includes(n)) {
+      renderChips(chips, [...values, n].sort((a, b) => a - b));
+      save();
+    } else {
+      renderChips(chips, values);
+    }
+  };
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); finish(true); }
+    else if (e.key === "Escape") finish(false);
+  });
+  input.addEventListener("blur", () => finish(true));
 }
 
 // --- Values ---
@@ -70,7 +137,7 @@ function loadValues(settings) {
     const v = settings[spec.key];
     if (spec.type === "bool") el.checked = Boolean(v);
     else if (spec.type === "number") el.value = v / spec.scale;
-    else if (spec.type === "minutes-list") el.value = (v || []).join(", ");
+    else if (spec.type === "minutes-list") renderChips(el, v || []);
   }
 }
 
@@ -80,12 +147,7 @@ function readValue(spec, el) {
     const n = Number(el.value);
     return Number.isFinite(n) ? Math.round(n * spec.scale) : undefined;
   }
-  if (spec.type === "minutes-list") {
-    return el.value
-      .split(",")
-      .map((s) => Number(s.trim()))
-      .filter((n) => Number.isFinite(n));
-  }
+  if (spec.type === "minutes-list") return chipValues(el);
 }
 
 function collectPatch() {
@@ -105,11 +167,15 @@ async function reload() {
 
 // --- Events ---
 
-async function onChange(e) {
-  if (!e.target.dataset.key) return;
+async function save() {
   await chrome.runtime.sendMessage({ type: "set-settings", settings: collectPatch() });
   flash("Saved");
   await reload(); // reflect any clamping the background applied
+}
+
+function onChange(e) {
+  if (!e.target.dataset.key) return;
+  save();
 }
 
 document.getElementById("reset").addEventListener("click", async () => {
