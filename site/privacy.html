@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PauseTube Privacy</title>
+  <meta name="description" content="Privacy policy for the PauseTube Chrome extension.">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <img src="icon.svg" alt="">
+      <a href="/">PauseTube</a>
+    </header>
+
+    <h1>Privacy policy</h1>
+    <p>Last updated: October 12, 2026</p>
+
+    <p>PauseTube does not collect, transmit, sell, or share any personal data. It has no servers, no analytics, and no account.</p>
+
+    <h2>What the extension stores</h2>
+    <p>PauseTube keeps a small amount of state in your browser with <code>chrome.storage.local</code>:</p>
+    <ul>
+      <li>Your settings, such as the gate timer and snooze options.</li>
+      <li>The current viewing session: start time, elapsed time, the IDs of the YouTube videos opened in it and how many, snooze state and snooze count, and the intent you typed into the prompt.</li>
+    </ul>
+    <p>Session data is replaced when a new session starts, after 30 minutes of inactivity by default. This data never leaves your device. Removing the extension deletes it.</p>
+
+    <h2>Permissions</h2>
+    <ul>
+      <li><strong>Access to youtube.com</strong>: shows the intent prompt, timer badge, and time gate on YouTube pages.</li>
+      <li><strong>storage</strong>: saves your settings and the current session locally.</li>
+      <li><strong>tabs</strong> and <strong>webNavigation</strong>: detect when a YouTube tab is open or navigates, so the timer runs only while you're on YouTube.</li>
+      <li><strong>scripting</strong>: adds PauseTube to YouTube tabs that were already open when the extension was installed or updated.</li>
+      <li><strong>alarms</strong>: runs the session timer.</li>
+    </ul>
+    <p>PauseTube does not read your YouTube account, watch history, or any site other than youtube.com.</p>
+
+    <h2>Changes</h2>
+    <p>If this policy changes, the update will be posted on this page with a new date.</p>
+
+    <h2>Contact</h2>
+    <p>Questions: <a href="mailto:hi@pausetube.com">hi@pausetube.com</a></p>
+
+    <footer>
+      <a href="/">Home</a>
+      <a href="mailto:hi@pausetube.com">hi@pausetube.com</a>
+    </footer>
+  </main>
+</body>
+</html>

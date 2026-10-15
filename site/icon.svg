@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Speech bubble in YouTube red: PauseTube asks before you watch -->
+  <rect x="2" y="6" width="124" height="84" rx="22" fill="#ff0033"/>
+  <path d="M44 88 L44 122 L80 88 Z" fill="#ff0033"/>
+
+  <!-- Pause bars: the prompt that adds friction, not a play button -->
+  <rect x="42" y="25" width="16" height="46" rx="7" fill="#ffffff"/>
+  <rect x="70" y="25" width="16" height="46" rx="7" fill="#ffffff"/>
+</svg>
