@@ -1,0 +1,20 @@
+{
+  "name": "pausetube",
+  "version": "0.1.0",
+  "description": "ADHD-friendly YouTube nudges. Don't block — add friction to the dopamine loop.",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.11.2",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "icons": "node icons/generate.mjs",
+    "postinstall": "wxt prepare"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "web-ext": "^10.7.0",
+    "wxt": "^0.21.4"
+  }
+}

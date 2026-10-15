@@ -1,10 +1,5 @@
-// Generates icon16.png, icon48.png, icon128.png from icon.svg
-// Requires: npm install canvas @resvg/resvg-js
-// Or run: node generate.mjs (after install)
-//
-// Quick alternative using built-in canvas via node-canvas:
-//   npm install canvas
-// Then run this script.
+// Generates public/icons/icon16.png, icon48.png, icon128.png from icon.svg
+// Run: pnpm icons
 
 import { Resvg } from '@resvg/resvg-js';
 import { readFileSync, writeFileSync } from 'fs';
@@ -17,6 +12,6 @@ const svg = readFileSync(join(__dirname, 'icon.svg'), 'utf8');
 for (const size of [16, 48, 128]) {
   const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: size } });
   const png = resvg.render().asPng();
-  writeFileSync(join(__dirname, `icon${size}.png`), png);
+  writeFileSync(join(__dirname, '..', 'public', 'icons', `icon${size}.png`), png);
   console.log(`icon${size}.png written`);
 }

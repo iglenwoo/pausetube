@@ -5,7 +5,8 @@
 // (value / scale) and converted back on save. Minute lists are edited as chips:
 // "+ Add" opens a small input, × removes one.
 
-const CONFIG = self.PauseTubeConfig;
+import { PauseTubeConfig as CONFIG } from "@/utils/config";
+
 const { SETTINGS_SCHEMA } = CONFIG;
 
 const form = document.getElementById("form");

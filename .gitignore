@@ -7,3 +7,8 @@ icons/node_modules/
 .idea/
 .vscode/
 .claude/
+
+# WXT build output
+.output/
+.wxt/
+web-ext.config.js

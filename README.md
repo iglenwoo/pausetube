@@ -19,26 +19,39 @@ Tune the friction — but never turn it off — from the **⚙ Settings** link i
 - **Snooze button** options for the popup and the gate
 - **Intent prompt** on/off, and whether to also prompt on links opened from outside YouTube
 
-Settings are sparse overrides on the schema in [`config.js`](./config.js) — the single source of truth that drives the defaults, the options form, and validation. Only changed knobs are stored, so the rest keep tracking the defaults across updates.
+Settings are sparse overrides on the schema in [`utils/config.js`](./utils/config.js) — the single source of truth that drives the defaults, the options form, and validation. Only changed knobs are stored, so the rest keep tracking the defaults across updates.
 
-## Install (dev)
+## Develop
 
-1. `chrome://extensions`
-2. Enable **Developer mode**
-3. **Load unpacked** → select this folder
+Built with [WXT](https://wxt.dev). Needs Node 22+ and pnpm (`brew install pnpm`).
+
+```sh
+pnpm install
+pnpm dev      # dev build in .output/chrome-mv3-dev/ with hot reload; load it unpacked
+pnpm build    # production build in .output/chrome-mv3/
+pnpm zip      # store-ready zip in .output/
+pnpm icons    # regenerate public/icons/*.png from icons/icon.svg
+```
+
+To load a build by hand: `chrome://extensions` → enable **Developer mode** → **Load unpacked** → select `.output/chrome-mv3/`.
+
+The version comes from `package.json`; the rest of the manifest from `wxt.config.js` and `entrypoints/`.
 
 ## Project layout
 
 ```
-manifest.json     MV3 manifest
-config.js         Settings schema + defaults + validation (shared everywhere)
-background.js     Service worker (session, timers, snooze, settings, tab tracking)
-content.js        Injected on youtube.com (overlay, intent, badge, pulse)
-content.css       Overlay + badge styles
-popup.html/js     Extension popup (stats, snooze, cancel)
-options.html/js   Settings page
-debug.html/js     Developer state console
-icons/            Action icons
+wxt.config.js           Manifest fields (permissions, icons)
+utils/config.js         Settings schema + defaults + validation (shared everywhere)
+entrypoints/
+  background.js         Service worker (session, timers, snooze, settings, tab tracking)
+  content/index.js      Injected on youtube.com (overlay, intent, badge, pulse)
+  content/style.css     Overlay + badge styles
+  popup/                Extension popup (stats, snooze, cancel)
+  options/              Settings page
+  debug/                Developer state console
+public/icons/           Action icons
+icons/                  Icon source SVG + generator
+site/                   pausetube.com landing and privacy pages
 ```
 
 State lives in `chrome.storage.local`. Timer runs only while a YouTube tab is open.
