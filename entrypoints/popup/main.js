@@ -1,4 +1,4 @@
-// PauseTube — Popup Script
+// PauseTube popup script
 
 const statsEl = document.getElementById("stats");
 const intentEl = document.getElementById("intent");
@@ -18,7 +18,7 @@ async function loadState() {
   }
 }
 
-// Snooze durations are configurable — rebuild the buttons whenever the set
+// Snooze durations are configurable, so rebuild the buttons whenever the set
 // changes (cheap; the popup re-renders once a second).
 let snoozeSig = null;
 function buildSnoozeButtons(options) {
@@ -47,7 +47,7 @@ function render(state) {
   buildSnoozeButtons(state.settings?.popupSnoozeOptions || [1, 5, 10]);
 
   // Stats
-  let timeText = "—";
+  let timeText = "-";
   if (session.startTime) {
     const elapsedBase = session.elapsedMs || 0;
     const runningElapsed = session.timerStartedAt ? Date.now() - session.timerStartedAt : 0;

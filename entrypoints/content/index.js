@@ -1,4 +1,4 @@
-// PauseTube — Content Script
+// PauseTube content script
 // Injected into YouTube pages: blur, intent prompt, floating badge
 
 import { PauseTubeConfig as CONFIG } from "@/utils/config";
@@ -55,7 +55,7 @@ export default defineContentScript({
       if (!currentState?.session?.startTime) return "none";
       if (isSnoozed()) return "snoozed";
       // The session hasn't really started until the user commits to an intent.
-      // While the intent prompt is still on screen, don't count risk time —
+      // While the intent prompt is still on screen, don't count risk time;
       // set-intent restarts the clock once they answer.
       if (document.querySelector(".pausetube-intent-overlay")) return "none";
       const highRiskMs = getSettings().highRiskMs;
@@ -67,7 +67,7 @@ export default defineContentScript({
     // --- Modal Plumbing ---
 
     // Both overlays are modal, and the gate can in principle mount while the
-    // intent prompt is still up, so the lock is reference-counted by owner —
+    // intent prompt is still up, so the lock is reference-counted by owner:
     // whoever unmounts last releases it.
     const scrollLockOwners = new Set();
     let lockedScrollY = 0;
@@ -90,7 +90,7 @@ export default defineContentScript({
     }
 
     // The gate pauses playback for as long as it's on screen, not just once at
-    // mount — otherwise YouTube's autoplay (or a click that lands before the
+    // mount. Otherwise YouTube's autoplay (or a click that lands before the
     // overlay does) restarts the video behind it.
     let pauseGuard = null;
 
@@ -117,7 +117,7 @@ export default defineContentScript({
     const FOCUSABLE_SELECTOR =
       'button:not([disabled]), input:not([disabled]), select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
 
-    // Rendered focusables only — the gate keeps its snooze buttons in the DOM,
+    // Rendered focusables only. The gate keeps its snooze buttons in the DOM,
     // display:none, for the whole breathing phase.
     function focusableIn(root) {
       return Array.from(root.querySelectorAll(FOCUSABLE_SELECTOR))
@@ -137,8 +137,8 @@ export default defineContentScript({
     // capture runs first, and stopping propagation there is what keeps the page
     // inert behind a modal. The flip side is that listeners inside the dialog
     // never see the event, so Enter on a non-button (the intent input) is routed
-    // through opts.onEnter. Default actions — typing, a button's Enter/Space
-    // click — are untouched by stopPropagation, so they still work.
+    // through opts.onEnter. Default actions (typing, a button's Enter/Space
+    // click) are untouched by stopPropagation, so they still work.
     // Returns a teardown that also restores focus to wherever it came from.
     function trapFocus(container, opts = {}) {
       const restoreTo = document.activeElement;
@@ -162,7 +162,7 @@ export default defineContentScript({
         if (!isTop()) return;
 
         if (!container.contains(e.target)) {
-          // Focus escaped (or never landed) — swallow the key and pull it back.
+          // Focus escaped (or never landed): swallow the key and pull it back.
           e.preventDefault();
           e.stopPropagation();
           focusableIn(container)[0]?.focus();
@@ -216,7 +216,7 @@ export default defineContentScript({
     // Resume playback only in the tab where the snooze was chosen (the gate here,
     // or the popup's active tab). Other tabs lift their gate off the storage
     // change but stay paused. Sync state first so the gate's pause guard is gone
-    // before play() — otherwise it pauses the video straight back.
+    // before play(). Otherwise it pauses the video straight back.
     async function resumePlayback() {
       await fetchState();
       applyRiskUI();
@@ -391,7 +391,7 @@ export default defineContentScript({
         </div>
       `;
 
-      // Snooze ("more min") buttons are configurable — build them from settings and
+      // Snooze ("more min") buttons are configurable, so build them from settings and
       // insert them between "I'm done" and "Cancel session".
       const snoozePhase = banner.querySelector(".pausetube-phase-snooze");
       const cancelBtn = snoozePhase.querySelector(".pausetube-choice-cancel");
@@ -434,7 +434,7 @@ export default defineContentScript({
     // fail, and the background injects a fresh copy into the tab. Stop every
     // timer and listener here so the stale copy doesn't fight the new one
     // (e.g. a failed fetchState reading as "no session" and lifting the blur).
-    // DOM cleanup is left to the new copy — this one can't tell its nodes apart.
+    // DOM cleanup is left to the new copy; this one can't tell its nodes apart.
     let orphaned = false;
 
     function stopIfOrphaned() {
@@ -554,13 +554,13 @@ export default defineContentScript({
 
       document.body.appendChild(overlay);
       lockScroll("intent");
-      // Enter from the input reaches submit() through the trap — the capture-phase
+      // Enter from the input reaches submit() through the trap. The capture-phase
       // listener stops the keydown before any listener on the input could run.
       releaseIntentFocus = trapFocus(overlay, { onEnter: submit });
       requestAnimationFrame(() => input.focus());
     }
 
-    // Always tear the prompt down through here — the overlay owns a scroll lock
+    // Always tear the prompt down through here. The overlay owns a scroll lock
     // and a focus trap that a bare .remove() would strand.
     function removeIntentPrompt() {
       releaseIntentFocus?.();
@@ -719,7 +719,7 @@ export default defineContentScript({
       }, 60000);
     }
 
-    // YouTube is an SPA — listen for navigation events
+    // YouTube is an SPA, so listen for navigation events
     function onNavigate() {
       if (stopIfOrphaned()) return;
       removeFeedHiddenBanner();
@@ -757,7 +757,7 @@ export default defineContentScript({
     });
     urlObserver.observe(document.body, { childList: true, subtree: true });
 
-    // The popup snoozes via the background, so no click lands in this tab — it
+    // The popup snoozes via the background, so no click lands in this tab; it
     // asks the active tab to resume instead.
     chrome.runtime.onMessage.addListener((msg) => {
       if (msg.type === "resume-playback") resumePlayback();
@@ -765,8 +765,8 @@ export default defineContentScript({
 
     // Cross-tab state sync. session/snooze/settings are a single source of truth
     // in chrome.storage.local; the background worker (and debug console) only ever
-    // mutate them there. Reacting to storage changes — rather than to targeted
-    // runtime messages — keeps every YouTube tab rendering off the same state no
+    // mutate them there. Reacting to storage changes, rather than to targeted
+    // runtime messages, keeps every YouTube tab rendering off the same state no
     // matter which tab or context made the change, and no mutation site has to
     // remember to broadcast.
     chrome.storage.onChanged.addListener((changes, area) => {
@@ -774,7 +774,7 @@ export default defineContentScript({
       if (!currentState) currentState = { session: {}, snooze: {}, settings: {} };
 
       if (changes.settings) {
-        // Stored settings are sparse overrides — expand to the full effective set
+        // Stored settings are sparse overrides. Expand to the full effective set
         // so getSettings()/getRiskLevel() see every key. Re-apply immediately so a
         // changed threshold (e.g. a shorter gate time) takes effect without waiting
         // for the next interval tick.
@@ -805,7 +805,7 @@ export default defineContentScript({
         const newIntent = session.intent ?? null;
         currentState.session = session;
 
-        // Only touch the prompt/sticky when the intent actually changed — session
+        // Only touch the prompt/sticky when the intent actually changed. Session
         // writes also happen for routine lastActivity/timer bumps, which must not
         // make the sticky flicker. Reflect intent before applyRiskUI, since
         // getRiskLevel suppresses the breath banner while the prompt is on screen.
@@ -814,7 +814,7 @@ export default defineContentScript({
             removeIntentSticky();
             if (shouldShowIntent()) showIntentPrompt();
           } else {
-            // Intent committed (here or in another tab) — drop any lingering
+            // Intent committed (here or in another tab): drop any lingering
             // prompt and mirror the chosen goal.
             removeIntentPrompt();
             if (newIntent === "Just browsing") removeIntentSticky();

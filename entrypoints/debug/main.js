@@ -1,4 +1,4 @@
-// PauseTube — Debug Console
+// PauseTube debug console
 // Live raw + derived state, with controls to force states and a raw-JSON editor.
 
 const $ = (id) => document.getElementById(id);
@@ -12,7 +12,7 @@ let last = { session: {}, snooze: {}, settings: {} };
 // --- Formatting ---
 
 function fmtClock(ms) {
-  if (ms == null || Number.isNaN(ms)) return "—";
+  if (ms == null || Number.isNaN(ms)) return "-";
   const neg = ms < 0;
   const s = Math.floor(Math.abs(ms) / 1000);
   const h = Math.floor(s / 3600);
@@ -25,7 +25,7 @@ function fmtClock(ms) {
 }
 
 function fmtAgo(ts) {
-  if (!ts) return "—";
+  if (!ts) return "-";
   const d = Date.now() - ts;
   if (d < 0) return "in " + fmtClock(-d);
   const s = Math.floor(d / 1000);
@@ -36,7 +36,7 @@ function fmtAgo(ts) {
 }
 
 function fmtTime(ts) {
-  return ts ? new Date(ts).toLocaleTimeString() : "—";
+  return ts ? new Date(ts).toLocaleTimeString() : "-";
 }
 
 function esc(v) {
@@ -95,15 +95,15 @@ function render(snap) {
   const highRiskMs = settings.highRiskMs ?? 180000;
 
   const toHigh = (!session.startTime || snooze.active || risk.level === "high")
-    ? "—"
+    ? "-"
     : fmtClock(Math.max(0, highRiskMs - elapsed));
-  const snoozeRem = snooze.active && snooze.expiresAt ? fmtClock(Math.max(0, snooze.expiresAt - now)) : "—";
+  const snoozeRem = snooze.active && snooze.expiresAt ? fmtClock(Math.max(0, snooze.expiresAt - now)) : "-";
   const vidsLeft = snooze.active && snooze.videoLimit
     ? Math.max(0, snooze.videoLimit - ((session.videoCount || 0) - (snooze.videosAtSnoozeStart || 0)))
-    : "—";
+    : "-";
   const timeoutIn = session.lastActivity
     ? fmtClock(Math.max(0, (settings.sessionTimeoutMin || 30) * 60000 - (now - session.lastActivity)))
-    : "—";
+    : "-";
   const alarmStr = alarms.length
     ? alarms.map((a) => `${esc(a.name)} in ${fmtClock(a.scheduledTime - now)}`).join(" · ")
     : "none";
@@ -120,24 +120,24 @@ function render(snap) {
 
   const watched = session.videosWatched || [];
   $("session").innerHTML = rows([
-    ["startTime", session.startTime ? `${fmtTime(session.startTime)} <span class="dim">(${fmtAgo(session.startTime)})</span>` : "—"],
+    ["startTime", session.startTime ? `${fmtTime(session.startTime)} <span class="dim">(${fmtAgo(session.startTime)})</span>` : "-"],
     ["elapsed (live)", `<b>${fmtClock(elapsed)}</b> <span class="dim">· base ${session.elapsedMs || 0}ms</span>`],
     ["timer", session.timerStartedAt
       ? `<span class="ok">● RUNNING</span> <span class="dim">since ${fmtTime(session.timerStartedAt)}</span>`
       : `<span class="dim">○ PAUSED</span>`],
     ["videoCount", session.videoCount || 0],
     ["videosWatched", watched.length ? `${watched.length}: <span class="dim">${esc(watched.join(", "))}</span>` : "0"],
-    ["intent", session.intent != null ? `"${esc(session.intent)}"` : "—"],
-    ["lastActivity", session.lastActivity ? `${fmtTime(session.lastActivity)} <span class="dim">(${fmtAgo(session.lastActivity)})</span>` : "—"],
+    ["intent", session.intent != null ? `"${esc(session.intent)}"` : "-"],
+    ["lastActivity", session.lastActivity ? `${fmtTime(session.lastActivity)} <span class="dim">(${fmtAgo(session.lastActivity)})</span>` : "-"],
     ["snoozeCount", session.snoozeCount || 0],
     ["totalSnoozed", fmtClock(session.totalSnoozedMs || 0)],
   ]);
 
   $("snooze").innerHTML = rows([
     ["active", snooze.active ? `<span class="ok">true</span>` : "false"],
-    ["startedAt", snooze.startedAt ? `${fmtTime(snooze.startedAt)} <span class="dim">(${fmtAgo(snooze.startedAt)})</span>` : "—"],
-    ["expiresAt", snooze.expiresAt ? `${fmtTime(snooze.expiresAt)} <span class="dim">(${fmtClock(snooze.expiresAt - now)} left)</span>` : "—"],
-    ["videoLimit", snooze.videoLimit ?? "—"],
+    ["startedAt", snooze.startedAt ? `${fmtTime(snooze.startedAt)} <span class="dim">(${fmtAgo(snooze.startedAt)})</span>` : "-"],
+    ["expiresAt", snooze.expiresAt ? `${fmtTime(snooze.expiresAt)} <span class="dim">(${fmtClock(snooze.expiresAt - now)} left)</span>` : "-"],
+    ["videoLimit", snooze.videoLimit ?? "-"],
     ["videosAtSnoozeStart", snooze.videosAtSnoozeStart ?? 0],
   ]);
 

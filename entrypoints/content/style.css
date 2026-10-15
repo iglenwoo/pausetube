@@ -1,4 +1,4 @@
-/* PauseTube — Content Styles */
+/* PauseTube content styles */
 
 /* --- Feed Hide --- */
 
@@ -12,7 +12,7 @@
   visibility: hidden !important;
 }
 
-/* Full-page dim overlay — sits behind the banner (z-index 9998 < 9999).
+/* Full-page dim overlay. Sits behind the banner (z-index 9998 < 9999).
    Eats clicks: the gate is modal, so nothing behind it stays reachable. The
    banner's own buttons sit above this layer and still work. */
 .pausetube-blur body::before {
@@ -79,14 +79,14 @@ html.pausetube-scroll-lock body {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: #4338ca; /* exhale — deep indigo */
+  background: #4338ca; /* exhale: deep indigo */
   transform: scale(0.7);
   opacity: 0.5;
   transition: transform 4s ease-in-out, opacity 4s ease-in-out, background-color 4s ease-in-out;
 }
 
 .pausetube-breathe-circle.inhaling {
-  background: #a78bfa; /* inhale — bright violet */
+  background: #a78bfa; /* inhale: bright violet */
   transform: scale(1.3);
   opacity: 1;
 }
@@ -219,7 +219,7 @@ html.pausetube-scroll-lock body {
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* "I'm done" — most visually prominent, feels restful */
+/* "I'm done": most visually prominent, feels restful */
 .pausetube-choice-done {
   padding: 15px 16px;
   background: #f0f0f5;
@@ -238,7 +238,7 @@ html.pausetube-scroll-lock body {
   background: #ffffff;
 }
 
-/* Continue options — visible but de-emphasized */
+/* Continue options: visible but de-emphasized */
 .pausetube-choice-snooze {
   padding: 10px 16px;
   background: transparent;
@@ -256,7 +256,7 @@ html.pausetube-scroll-lock body {
   color: #aaa;
 }
 
-/* Cancel session — softest option */
+/* Cancel session: softest option */
 .pausetube-choice-cancel {
   padding: 8px 16px;
   background: none;
@@ -275,7 +275,7 @@ html.pausetube-scroll-lock body {
   color: #a5b4fc;
 }
 
-/* Keyboard focus ring. Plain :focus, not :focus-visible — the gate moves focus
+/* Keyboard focus ring. Plain :focus, not :focus-visible. The gate moves focus
    programmatically when the snooze phase appears, which :focus-visible would
    only style if the last input happened to be a key press. */
 .pausetube-feed-banner button:focus,

@@ -1,4 +1,4 @@
-// PauseTube — Background Service Worker
+// PauseTube background service worker
 // Manages session state, timers, snooze logic, and badge updates
 
 import { PauseTubeConfig } from "@/utils/config";
@@ -33,7 +33,7 @@ export default defineBackground(() => {
       "session",
       "snooze",
     ]);
-    // Settings are stored as *sparse overrides* — only keys the user changed.
+    // Settings are stored as *sparse overrides*: only keys the user changed.
     // toSparse(effectiveSettings(...)) clamps whatever is stored and drops any key
     // that equals the current default, so (a) old full settings objects migrate to
     // sparse form, and (b) a changed default automatically reaches anyone who
@@ -111,7 +111,7 @@ export default defineBackground(() => {
 
     // If the timer is running but lastActivity is stale (laptop slept without
     // triggering onStartup), pause the timer at lastActivity before checking
-    // the timeout — otherwise elapsed keeps growing through the sleep gap.
+    // the timeout. Otherwise elapsed keeps growing through the sleep gap.
     if (session.timerStartedAt && session.lastActivity && (now - session.lastActivity) > 2 * 60 * 1000) {
       session = pauseTimer(session, session.lastActivity);
       await chrome.storage.local.set({ session });
@@ -302,7 +302,7 @@ export default defineBackground(() => {
       return;
     }
 
-    // Last YouTube tab closed — end the session so the next visit starts fresh
+    // Last YouTube tab closed: end the session so the next visit starts fresh
     // (new intent prompt), instead of resuming the paused session.
     const { session } = await getState();
     if (!session.startTime) return; // nothing to reset
@@ -373,7 +373,7 @@ export default defineBackground(() => {
         session.intent = msg.intent;
         session.lastActivity = now;
         // Restart the high-risk countdown from the moment the user commits to an
-        // intent — time spent sitting on the intent prompt shouldn't count.
+        // intent. Time spent sitting on the intent prompt shouldn't count.
         session.elapsedMs = 0;
         session.timerStartedAt = now;
         await chrome.storage.local.set({ session });
@@ -406,7 +406,7 @@ export default defineBackground(() => {
       (async () => {
         // "I'm done" ends the session for *every* tab, not just this one. Closing
         // the tab alone only resets state when it's the last YouTube tab (see
-        // tabs.onRemoved) — with other tabs still open they'd keep the old at-risk
+        // tabs.onRemoved). With other tabs still open they'd keep the old at-risk
         // session and stay blurred. Start a fresh session (startTime set, intent
         // cleared) so any remaining tabs drop the breath banner and re-prompt for
         // intent. A fresh session rather than EMPTY_SESSION matters: set-intent

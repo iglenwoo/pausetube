@@ -1,4 +1,4 @@
-// PauseTube — Options page
+// PauseTube options page
 // Renders a settings form straight from the shared SETTINGS_SCHEMA and saves
 // (auto-saves on change) through the background's set-settings handler, which
 // clamps and stores overrides sparsely. Number knobs are shown in display units

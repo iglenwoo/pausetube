@@ -1,4 +1,4 @@
-// PauseTube — Shared config
+// PauseTube shared config
 // Single source of truth for what is configurable, the valid range, and the
 // defaults. Imported by the service worker, the content script, and the
 // options page.
