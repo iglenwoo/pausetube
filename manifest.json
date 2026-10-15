@@ -3,6 +3,7 @@
   "name": "PauseTube",
   "version": "0.1.0",
   "description": "ADHD-friendly YouTube nudges. Don't block — add friction to the dopamine loop.",
+  "homepage_url": "https://pausetube.com",
   "permissions": [
     "storage",
     "scripting",
