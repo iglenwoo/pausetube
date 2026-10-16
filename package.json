@@ -2,6 +2,7 @@
   "name": "pausetube",
   "version": "0.1.0",
   "description": "ADHD-friendly YouTube nudges. Instead of blocking YouTube, it adds friction to the dopamine loop.",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.11.2",

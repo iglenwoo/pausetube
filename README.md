@@ -55,3 +55,7 @@ site/                   pausetube.com landing and privacy pages
 ```
 
 State lives in `chrome.storage.local`. Timer runs only while a YouTube tab is open.
+
+## License
+
+[MIT](LICENSE)
